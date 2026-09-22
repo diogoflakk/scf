@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISTEMA GCF - PANEL DE ADMINISTRACIÓN</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --bg-base: #050505; --bg-surface: #121212; 
+            --accent-main: #FF3B30; --accent-hover: #FF5B52;
+            --accent-danger: #FF1744; --accent-success: #00E676; 
+            --accent-gold: #FFD700; --text-main: #FDFCF7; 
+            --text-muted: #B5A89E; --border-color: #2E1A1A;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; padding: 10px; }
+        .app-container { max-width: 1000px; margin: 0 auto; background: var(--bg-surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 20px; }
+        .header { background: #000000; color: var(--text-main); padding: 20px; border-bottom: 2px solid var(--accent-main); display: flex; justify-content: space-between; align-items: center; border-radius: 8px; margin-bottom: 25px; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #FFF; }
+        .user-badge { background: #1A1212; padding: 8px 15px; border-radius: 20px; font-size: 14px; font-weight: 600; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;}
+        .btn-logout { background: transparent; color: #FF6B6B; border: 1px solid #FF6B6B; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
+        input[type="text"], input[type="tel"], select { width: 100%; padding: 14px; background: #0A0A0A; color: #FFF; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        input:focus, select:focus { border-color: var(--accent-main); outline: none; }
+        button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
+        button:hover { background: var(--accent-hover); }
+        button.btn-danger { background: var(--accent-danger); color: white; }
+        button.btn-success { background: var(--accent-success); color: #000; font-weight: 800; }
+        button.btn-warning { background: var(--accent-gold); color: black; }
+        .input-group { display: flex; flex-direction: column; gap: 15px; }
+        @media (min-width: 768px) { .input-group { flex-direction: row; } .input-group > * { flex: 1; } }
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: #0A0A0A; color: var(--text-main); font-weight: 600; }
+        tr:nth-child(even) { background-color: #161010; }
+        .admin-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media(min-width: 768px) { .admin-grid { grid-template-columns: 1fr 1fr; } }
+        .admin-card { background: #161010; border: 1px solid var(--border-color); padding: 25px; border-radius: 12px; }
+        .admin-card.full-width { grid-column: 1 / -1; }
+        .admin-card h3 { margin-top: 0; color: #FFF; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-size: 16px; }
+        .checkbox-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; background: #0A0A0A; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .checkbox-group label { font-size: 14px; text-transform: none; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; }
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-main); cursor: pointer; }
+        #print-area { display: none; }
+        @media print {
+            .app-container, body { background: white !important; }
+            .app-container { box-shadow: none; border: none; }
+            @page { size: 100mm 100mm; margin: 0; }
+            body { background: white !important; margin: 0 !important; padding: 0 !important; }
+            #print-area { display: block !important; width: 100mm; }
+            .label-box { width: 100mm; height: 100mm; box-sizing: border-box; display: flex !important; flex-direction: column; align-items: center; justify-content: center; background: white; page-break-after: always; break-after: page; margin: 0; }
+            .label-barcode { width: 100%; text-align: center; }
+            .print-barcode-svg { width: 90% !important; height: 180px !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>⚙️ Panel Exclusivo de Administración</h1>
+            <div class="user-badge">
+                👤 <span id="current_user_name">Admin</span>
+                <button class="btn-logout" onclick="cerrarSesion()">SALIR</button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 25px; display: flex; gap: 15px; align-items: center;">
+            <a href="panel.html" style="color: var(--accent-gold); text-decoration: underline; font-weight: bold;">⬅️ Ir al Panel Operativo</a>
+            <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ LIMPIAR TODAS LAS CAJAS</button>
+        </div>
+
+        <!-- IMPRESIÓN MÚLTIPLE EN LOTE -->
+        <div class="admin-card full-width" style="margin-bottom: 25px;">
+            <h3 style="color: var(--accent-gold);">🖨️ Impresión Múltiple de Etiquetas por Rangos</h3>
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px;">
+                    <label style="font-size: 13px;">Método de selección:</label>
+                    <select id="metodo_impresion" onchange="cambiarMetodoImpresion()">
+                        <option value="rango">Generar por Rango de Series (Ej: LAA-001 al LAA-010)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="panel_rango" style="background: #121212; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+                <div class="input-group" style="margin-bottom: 0;">
+                    <div><label style="font-size: 13px;">Serie Inicial:</label><input type="text" id="rango_inicio" placeholder="Ej: LAA-001"></div>
+                    <div><label style="font-size: 13px;">Serie Final:</label><input type="text" id="rango_fin" placeholder="Ej: LAA-020"></div>
+                </div>
+            </div>
+            <button class="btn-success" onclick="ejecutarImpresionLote()" style="padding: 14px;">🖨️ IMPRIMIR ETIQUETAS EN LOTE</button>
+        </div>
+
+        <div class="admin-grid">
+            <!-- UBICACIONES -->
+            <div class="admin-card">
+                <h3>📍 Ubicaciones del Inventario</h3>
+                <div class="form-group">
+                    <label>Nueva Ubicación</label>
+                    <input type="text" id="nueva_ubi_nombre" placeholder="Ej: ZONA - C3">
+                </div>
+                <button class="btn-success" style="margin-bottom: 15px;" onclick="agregarUbicacion()">+ Agregar Ubicación</button>
+                <div id="lista_ubicaciones" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- DIMENSIONES -->
+            <div class="admin-card">
+                <h3>📦 Dimensiones de Cajas</h3>
+                <div class="form-group">
+                    <label>Nueva Dimensión</label>
+                    <input type="text" id="nueva_dim_nombre" placeholder="Ej: Mediana">
+                </div>
+                <button class="btn-success" style="margin-bottom: 15px;" onclick="agregarDimension()">+ Agregar Dimensión</button>
+                <div id="lista_dimensiones" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- GESTIÓN DE USUARIOS -->
+            <div class="admin-card full-width">
+                <h3 id="lbl_modo_usuario">👥 Gestión de Operadores, DNI y Roles</h3>
+                <div class="form-group">
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <div><label>DNI (8 dígitos)</label><input type="tel" id="reg_dni" maxlength="8" placeholder="Ej: 40123456"></div>
+                        <div><label>Nombre Completo</label><input type="text" id="reg_nombre" placeholder="Nombres y Apellidos"></div>
+                        <div><label>Nombre del Rol</label><input type="text" id="reg_rol" placeholder="Ej: Supervisor"></div>
+                    </div>
+                    
+                    <label>Permisos de Acceso Asignados:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="perm_ingreso" value="tab_ingreso"> Registrar Ingresos</label>
+                        <label><input type="checkbox" id="perm_egreso" value="tab_egreso"> Procesar Retiros</label>
+                        <label><input type="checkbox" id="perm_traslado" value="tab_traslado"> Traslados Internos</label>
+                        <label><input type="checkbox" id="perm_inventario" value="tab_inventario" checked> Ver Inventario</label>
+                        <label><input type="checkbox" id="perm_admin" value="tab_admin"> Panel de Control</label>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; margin-top: 25px;">
+                        <button class="btn-success" style="flex: 2;" onclick="guardarUsuarioAdmin()">💾 Guardar Operador</button>
+                        <button id="btn_cancelar_edicion" class="btn-warning" style="flex: 1; display: none;" onclick="cancelarEdicionUsuario()">Cancelar</button>
+                    </div>
+                </div>
+                
+                <h4 style="margin-top: 35px; border-top: 1px solid var(--border-color); padding-top: 20px; color: #FFF;">Operadores Activos:</h4>
+                <div id="lista_usuarios" class="table-responsive"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-area"></div>
+
+    <script>
+        const SUPABASE_URL = "https://yopvikmrjnqcbkkubcbs.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_XQ5WAm8porUCSyP_q37sPQ_Ubxlr0Rl";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let usuarioActual = null;
+        let dniEditandoOriginal = null;
+        const PASSWORD_MAESTRA_ADMIN = "0801200713011409";
+
+        window.onload = async () => {
+            const sesionGuardada = sessionStorage.getItem('sgcf_sesion_cloud');
+            if(sesionGuardada) {
+                usuarioActual = JSON.parse(sesionGuardada);
+                // Escudo estricto: si no es admin, fuera
+                if (!usuarioActual.permisos.includes('tab_admin')) {
+                    alert("⚠️ Acceso denegado. Se requieren privilegios de Administrador.");
+                    window.location.href = 'panel.html';
+                    return;
+                }
+                document.getElementById('current_user_name').innerText = usuarioActual.nombre;
+                await cargarPanelAdmin();
+            } else {
+                window.location.href = 'login.html';
+            }
+        };
+
+        function cerrarSesion() {
+            sessionStorage.removeItem('sgcf_sesion_cloud');
+            window.location.href = 'login.html';
+        }
+
+        async function cargarPanelAdmin() {
+            const { data: ubis } = await supabaseClient.from('ubicaciones').select('nombre');
+            const { data: dims } = await supabaseClient.from('dimensiones').select('nombre');
+            window.ubicacionesDB = ubis ? ubis.map(u => u.nombre) : [];
+            window.dimensionesDB = dims ? dims.map(d => d.nombre) : [];
+
+            document.getElementById('lista_ubicaciones').innerHTML = (window.ubicacionesDB || []).map(u => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #0A0A0A; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <span>📍 ${u}</span>
+                    <button class="btn-danger" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="eliminarUbicacion('${u}')">Eliminar</button>
+                </div>
+            `).join('');
+
+            document.getElementById('lista_dimensiones').innerHTML = (window.dimensionesDB || []).map(d => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #0A0A0A; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+                    <span>📦 ${d}</span>
+                    <button class="btn-danger" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="eliminarDimension('${d}')">Eliminar</button>
+                </div>
+            `).join('');
+
+            const { data: usuarios } = await supabaseClient.from('usuarios').select('*');
+            let htmlUsers = "<table><tr><th>DNI</th><th>Nombre</th><th>Rol</th><th>Funciones</th><th>Acciones</th></tr>";
+            (usuarios || []).forEach(u => {
+                let descPermisos = (u.permisos || []).join(', ');
+                let acciones = u.dni === '08131409' ? 
+                    `<button class="btn-warning" style="padding:6px 12px; font-size:12px; width:auto;" onclick="cargarEdicionUsuarioAdminPrincipal('${u.dni}')">🔒 Modificar</button>` :
+                    `<button class="btn-warning" style="padding:6px 12px; font-size:12px; width:auto; margin-right:6px;" onclick="cargarEdicionUsuario('${u.dni}')">Modificar</button>
+                     <button class="btn-danger" style="padding:6px 12px; font-size:12px; width:auto;" onclick="eliminarUsuario('${u.dni}')">Eliminar</button>`;
+                htmlUsers += `<tr><td>${u.dni}</td><td>${u.nombre}</td><td><b>${u.rol}</b></td><td style="font-size:13px; color:var(--text-muted);">${descPermisos}</td><td>${acciones}</td></tr>`;
+            });
+            htmlUsers += "</table>";
+            document.getElementById('lista_usuarios').innerHTML = htmlUsers;
+        }
+
+        async function agregarUbicacion() {
+            const nueva = document.getElementById('nueva_ubi_nombre').value.trim();
+            if (!nueva) return alert("Ingrese nombre de ubicación.");
+            await supabaseClient.from('ubicaciones').insert([{ nombre: nueva }]);
+            document.getElementById('nueva_ubi_nombre').value = '';
+            cargarPanelAdmin();
+            alert("✅ Ubicación agregada.");
+        }
+
+        async function eliminarUbicacion(ubi) {
+            if (window.ubicacionesDB.length <= 1) return alert("Debe mantener al menos una ubicación.");
+            if (confirm(`¿Eliminar ubicación "${ubi}"?`)) {
+                await supabaseClient.from('ubicaciones').delete().eq('nombre', ubi);
+                cargarPanelAdmin();
+            }
+        }
+
+        async function agregarDimension() {
+            const nueva = document.getElementById('nueva_dim_nombre').value.trim();
+            if (!nueva) return alert("Ingrese dimensión.");
+            await supabaseClient.from('dimensiones').insert([{ nombre: nueva }]);
+            document.getElementById('nueva_dim_nombre').value = '';
+            cargarPanelAdmin();
+            alert("✅ Dimensión agregada.");
+        }
+
+        async function eliminarDimension(dim) {
+            if (window.dimensionesDB.length <= 1) return alert("Debe mantener al menos una dimensión.");
+            if (confirm(`¿Eliminar dimensión "${dim}"?`)) {
+                await supabaseClient.from('dimensiones').delete().eq('nombre', dim);
+                cargarPanelAdmin();
+            }
+        }
+
+        async function cargarEdicionUsuarioAdminPrincipal(dni) {
+            const pass = prompt("🔒 PERFIL PROTEGIDO\n\nIngrese contraseña secreta de Administrador:");
+            if (pass === PASSWORD_MAESTRA_ADMIN) { await cargarEdicionUsuario(dni); alert("🔓 Desbloqueado."); }
+            else if (pass !== null) { alert("⚠️ Contraseña incorrecta."); }
+        }
+
+        async function guardarUsuarioAdmin() {
+            const dniInput = document.getElementById('reg_dni').value.trim();
+            const nombre = document.getElementById('reg_nombre').value.trim();
+            const rol = document.getElementById('reg_rol').value.trim() || 'Operador';
+            if (dniInput.length !== 8 || !nombre) return alert("Complete DNI de 8 dígitos y nombre.");
+
+            let permisosSeleccionados = [];
+            if (document.getElementById('perm_ingreso').checked) permisosSeleccionados.push('tab_ingreso');
+            if (document.getElementById('perm_egreso').checked) permisosSeleccionados.push('tab_egreso');
+            if (document.getElementById('perm_traslado').checked) permisosSeleccionados.push('tab_traslado');
+            if (document.getElementById('perm_inventario').checked) permisosSeleccionados.push('tab_inventario');
+            if (document.getElementById('perm_admin').checked) permisosSeleccionados.push('tab_admin');
+
+            if (dniInput === '08131409' || dniEditandoOriginal === '08131409') {
+                if (prompt("🔒 Ingrese la contraseña secreta para confirmar:") !== PASSWORD_MAESTRA_ADMIN) return alert("⚠️ Contraseña incorrecta.");
+            }
+
+            if (dniEditandoOriginal && dniEditandoOriginal !== dniInput) {
+                await supabaseClient.from('usuarios').delete().eq('dni', dniEditandoOriginal);
+                await supabaseClient.from('usuarios').insert([{ dni: dniInput, nombre, rol, pin: null, permisos: permisosSeleccionados }]);
+            } else {
+                const { data: existe } = await supabaseClient.from('usuarios').select('dni').eq('dni', dniInput).single();
+                if (existe) {
+                    await supabaseClient.from('usuarios').update({ nombre, rol, permisos: permisosSeleccionados }).eq('dni', dniInput);
+                } else {
+                    await supabaseClient.from('usuarios').insert([{ dni: dniInput, nombre, rol, pin: null, permisos: permisosSeleccionados }]);
+                }
+            }
+            cancelarEdicionUsuario();
+            cargarPanelAdmin();
+            alert("✅ Usuario guardado con éxito.");
+        }
+
+        async function cargarEdicionUsuario(dni) {
+            const { data: u } = await supabaseClient.from('usuarios').select('*').eq('dni', dni).single();
+            if (!u) return;
+            dniEditandoOriginal = dni;
+            document.getElementById('reg_dni').value = u.dni;
+            document.getElementById('reg_nombre').value = u.nombre;
+            document.getElementById('reg_rol').value = u.rol;
+            document.getElementById('perm_ingreso').checked = (u.permisos || []).includes('tab_ingreso');
+            document.getElementById('perm_egreso').checked = (u.permisos || []).includes('tab_egreso');
+            document.getElementById('perm_traslado').checked = (u.permisos || []).includes('tab_traslado');
+            document.getElementById('perm_inventario').checked = (u.permisos || []).includes('tab_inventario');
+            document.getElementById('perm_admin').checked = (u.permisos || []).includes('tab_admin');
+            document.getElementById('lbl_modo_usuario').innerText = "✏️ Modificando Operador (DNI: " + dni + ")";
+            document.getElementById('btn_cancelar_edicion').style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function cancelarEdicionUsuario() {
+            dniEditandoOriginal = null;
+            document.getElementById('reg_dni').value = '';
+            document.getElementById('reg_nombre').value = '';
+            document.getElementById('reg_rol').value = '';
+            document.getElementById('perm_ingreso').checked = false;
+            document.getElementById('perm_egreso').checked = false;
+            document.getElementById('perm_traslado').checked = false;
+            document.getElementById('perm_inventario').checked = true;
+            document.getElementById('perm_admin').checked = false;
+            document.getElementById('lbl_modo_usuario').innerText = "👥 Gestión de Operadores, DNI y Roles";
+            document.getElementById('btn_cancelar_edicion').style.display = 'none';
+        }
+
+        async function eliminarUsuario(dni) {
+            if (dni === '08131409') return alert("No se puede eliminar al admin principal.");
+            if (confirm(`¿Eliminar usuario ${dni}?`)) {
+                await supabaseClient.from('usuarios').delete().eq('dni', dni);
+                cargarPanelAdmin();
+            }
+        }
+
+        function ejecutarImpresionLote() {
+            const inicioStr = document.getElementById('rango_inicio').value.trim().toUpperCase();
+            const finStr = document.getElementById('rango_fin').value.trim().toUpperCase();
+            if (!inicioStr || !finStr) return alert("⚠️ Ingrese serie inicial y final.");
+            
+            const p1 = inicioStr.split('-'), p2 = finStr.split('-');
+            if (p1.length !== 2 || p2.length !== 2) return alert("⚠️ Formato incorrecto. Use LAA-001");
+            
+            let numIni = parseInt(p1[1]), numFin = parseInt(p2[1]);
+            if (isNaN(numIni) || isNaN(numFin) || numIni > numFin) return alert("⚠️ Rango no válido.");
+
+            let seriales = [];
+            for (let i = numIni; i <= numFin; i++) {
+                seriales.push(`${p1[0]}-${String(i).padStart(3, '0')}`);
+            }
+
+            const printArea = document.getElementById('print-area');
+            printArea.innerHTML = "";
+            seriales.forEach(s => {
+                printArea.innerHTML += `<div class="label-box"><div class="label-barcode"><svg class="print-barcode-svg" data-serial="${s}"></svg></div></div>`;
+            });
+
+            seriales.forEach(s => {
+                JsBarcode(`.print-barcode-svg[data-serial="${s}"]`, s, { format: "CODE128", lineColor: "#000000", width: 3, height: 180, displayValue: true, fontSize: 26, textMargin: 8 });
+            });
+
+            setTimeout(() => window.print(), 600);
+        }
+
+        async function limpiarBaseDatos() {
+            if(confirm("⚠️ PELIGRO: ¿Borrar TODAS las cajas de la nube?")) {
+                await supabaseClient.from('cajas').delete().neq('serial', ''); 
+                alert("✅ Base de datos limpiada.");
+            }
+        }
+    </script>
+</body>
+</html>

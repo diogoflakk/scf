@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISTEMA GCF - PANEL OPERATIVO</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --bg-base: #050505; --bg-surface: #121212; 
+            --accent-main: #FF3B30; --accent-hover: #FF5B52;
+            --accent-danger: #FF1744; --accent-success: #00E676; 
+            --accent-gold: #FFD700; --text-main: #FDFCF7; 
+            --text-muted: #B5A89E; --border-color: #2E1A1A;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; padding: 10px; }
+        .app-container { max-width: 1000px; margin: 0 auto; background: var(--bg-surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .header { background: #000000; color: var(--text-main); padding: 20px; border-bottom: 2px solid var(--accent-main); display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #FFF; }
+        .user-badge { background: #1A1212; padding: 8px 15px; border-radius: 20px; font-size: 14px; font-weight: 600; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;}
+        .btn-logout { background: transparent; color: #FF6B6B; border: 1px solid #FF6B6B; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .tabs { display: flex; flex-wrap: wrap; background: #000000; border-bottom: 1px solid var(--border-color); }
+        .tab { flex: 1; min-width: 110px; padding: 18px 10px; text-align: center; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--text-muted); border-bottom: 3px solid transparent; transition: 0.3s; }
+        .tab.active { background: var(--bg-surface); color: #FFF; border-bottom: 3px solid var(--accent-main); }
+        .tab-content { display: none; padding: 30px 20px; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
+        input[type="text"], input[type="tel"], select { width: 100%; padding: 16px; background: #0A0A0A; color: #FFF; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; font-weight: 500; }
+        input:focus, select:focus { border-color: var(--accent-main); outline: none; }
+        button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
+        button:hover { background: var(--accent-hover); }
+        button.btn-danger { background: var(--accent-danger); color: white; }
+        button.btn-success { background: var(--accent-success); color: #000; font-weight: 800; }
+        .input-group { display: flex; flex-direction: column; gap: 15px; }
+        @media (min-width: 768px) { .input-group { flex-direction: row; } .input-group > * { flex: 1; } }
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: #0A0A0A; color: var(--text-main); font-weight: 600; }
+        tr:nth-child(even) { background-color: #161010; }
+        .estado-despachado { color: var(--accent-danger); font-weight: 800; }
+        .estado-almacen { color: var(--accent-success); font-weight: 800; }
+        #print-area { display: none; }
+        @media print {
+            .app-container, body { background: white !important; }
+            .app-container { box-shadow: none; border: none; display: none !important; }
+            @page { size: 100mm 100mm; margin: 0; }
+            body { background: white !important; margin: 0 !important; padding: 0 !important; }
+            #print-area { display: block !important; width: 100mm; }
+            .label-box { width: 100mm; height: 100mm; box-sizing: border-box; display: flex !important; flex-direction: column; align-items: center; justify-content: center; background: white; page-break-after: always; break-after: page; margin: 0; }
+            .label-barcode { width: 100%; text-align: center; }
+            .print-barcode-svg { width: 90% !important; height: 180px !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container" id="main-app">
+        <div class="header">
+            <h1>Sistema GCF - Panel Operativo</h1>
+            <div class="user-badge">
+                👤 <span id="current_user_name">Operador</span>
+                <button class="btn-logout" onclick="cerrarSesion()">SALIR</button>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div id="btn_tab_ingreso" class="tab active" onclick="switchTab('tab-ingreso', this)">📥 INGRESO</div>
+            <div id="btn_tab_egreso" class="tab" onclick="switchTab('tab-egreso', this)">📤 EGRESO</div>
+            <div id="btn_tab_traslado" class="tab" onclick="switchTab('tab-traslado', this)">🔄 TRASLADO</div>
+            <div id="btn_tab_inventario" class="tab" onclick="switchTab('tab-inventario', this); cargarInventario()">📋 INVENTARIO</div>
+        </div>
+
+        <!-- INGRESO -->
+        <div id="tab-ingreso" class="tab-content active">
+            <div class="form-group">
+                <label>N° DE SERIE (Generado Automáticamente)</label>
+                <input type="text" id="in_serial" readonly style="background:#0A0A0A; color:var(--accent-main); border-color:var(--border-color); text-align:center; font-size:20px; letter-spacing:1px; font-weight:bold;">
+            </div>
+            <div class="form-group">
+                <label>Descripción (Opcional)</label>
+                <input type="text" id="in_desc" placeholder="Ej: 35 frascos">
+            </div>
+            <div class="input-group form-group">
+                <div><label>Dimensión</label><select id="in_dim"></select></div>
+                <div><label>Ubicación Inicial</label><select id="in_ubi"></select></div>
+            </div>
+            <div class="form-group" style="background: #0A0A0A; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); margin: 0; font-size: 14px; text-transform: none;">
+                    <input type="checkbox" id="chk_imprimir_al_registrar" checked style="width: 18px; height: 18px; accent-color: var(--accent-main); cursor: pointer;">
+                    🖨️ Imprimir etiqueta automáticamente
+                </label>
+            </div>
+            <button onclick="procesarIngreso()">📥 REGISTRAR CAJA</button>
+        </div>
+
+        <!-- EGRESO -->
+        <div id="tab-egreso" class="tab-content">
+            <div class="form-group">
+                <label>N° DE SERIE A RETIRAR</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="eg_serial" placeholder="Ej: LAA-001" style="flex: 1;">
+                    <button type="button" onclick="iniciarEscanerCamara('eg_serial')" style="width: auto; padding: 0 20px; background: #0A0A0A; color: var(--text-main); border: 1px solid var(--border-color); font-size: 20px;" title="Escanear con cámara">📷</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>NOMBRES COMPLETOS DEL DOCTOR O RECEPTOR</label>
+                <input type="text" id="eg_nombre" placeholder="Escriba el nombre" style="background:#0A0A0A; border-color:var(--border-color); color:#FFF;">
+            </div>
+            <div class="form-group" style="background: #0A0A0A; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); margin: 0; font-size: 14px; text-transform: none;">
+                    <input type="checkbox" id="chk_activar_dni" style="width: 18px; height: 18px; accent-color: var(--accent-main); cursor: pointer;" onchange="toggleDniReceptor()">
+                    Registrar DNI del receptor (Opcional)
+                </label>
+            </div>
+            <div class="form-group" id="contenedor_dni_receptor" style="display: none;">
+                <label>DNI DEL RECEPTOR (8 dígitos)</label>
+                <input type="tel" id="eg_dni" maxlength="8" placeholder="Ej: 40123456">
+            </div>
+            <button class="btn-danger" onclick="procesarEgreso()">⚠️ CONFIRMAR SALIDA</button>
+        </div>
+
+        <!-- TRASLADO -->
+        <div id="tab-traslado" class="tab-content">
+            <div class="form-group">
+                <label>N° DE SERIE A REUBICAR</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="tr_serial" placeholder="Ej: LAA-001" style="flex: 1;">
+                    <button type="button" onclick="iniciarEscanerCamara('tr_serial')" style="width: auto; padding: 0 20px; background: #0A0A0A; color: var(--text-main); border: 1px solid var(--border-color); font-size: 20px;" title="Escanear con cámara">📷</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>NUEVA UBICACIÓN</label>
+                <select id="tr_ubi"></select>
+            </div>
+            <button onclick="procesarTraslado()">🔄 ACTUALIZAR UBICACIÓN</button>
+        </div>
+
+        <!-- ESCANER DE CÁMARA -->
+        <div id="reader-container" style="display: none; margin-bottom: 25px; background: #000000; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+            <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+            <button type="button" class="btn-danger" style="margin-top: 15px; padding: 10px;" onclick="cerrarEscanerCamara()">❌ Cancelar Escaneo</button>
+        </div>
+
+        <!-- INVENTARIO -->
+        <div id="tab-inventario" class="tab-content">
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
+                <h2 style="margin: 0; color: #FFF; font-size: 18px;">SEGUIMIENTO DEL INVENTARIO</h2>
+                <div><input type="text" id="buscador_inventario" placeholder="🔍 Buscar por ubicación o código..." onkeyup="filtrarInventario()" style="padding: 12px 15px; font-size: 15px;"></div>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N° Serie</th>
+                            <th>Descripción</th>
+                            <th>Dimensión</th>
+                            <th>Ubicación</th>
+                            <th>Estado</th>
+                            <th>Operador</th>
+                            <th>Receptor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla_inventario"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-area"></div>
+
+    <script>
+        const SUPABASE_URL = "https://yopvikmrjnqcbkkubcbs.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_XQ5WAm8porUCSyP_q37sPQ_Ubxlr0Rl";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let usuarioActual = null;
+        let cacheInventario = [];
+        let html5QrCodeScanner = null;
+        let campoDestinoEscaneo = null;
+
+        window.onload = async () => {
+            const sesionGuardada = sessionStorage.getItem('sgcf_sesion_cloud');
+            if(sesionGuardada) {
+                usuarioActual = JSON.parse(sesionGuardada);
+                // Si por alguna razón un admin entra aquí, lo dejamos o podemos redirigirlo, 
+                // pero permitimos que los permisos validen las pestañas.
+                await cargarCatalogosRemotos();
+                actualizarSiguienteSerie();
+                
+                supabaseClient
+                    .channel('cambios-inventario')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'cajas' }, () => {
+                        cargarInventario();
+                        actualizarSiguienteSerie();
+                    })
+                    .subscribe();
+
+                document.getElementById('current_user_name').innerText = usuarioActual.nombre;
+                
+                // Ocultar pestañas no permitidas
+                if(!usuarioActual.permisos.includes('tab_ingreso')) document.getElementById('btn_tab_ingreso').style.display = 'none';
+                if(!usuarioActual.permisos.includes('tab_egreso')) document.getElementById('btn_tab_egreso').style.display = 'none';
+                if(!usuarioActual.permisos.includes('tab_traslado')) document.getElementById('btn_tab_traslado').style.display = 'none';
+                if(!usuarioActual.permisos.includes('tab_inventario')) document.getElementById('btn_tab_inventario').style.display = 'none';
+
+                // Activar primera pestaña disponible
+                let primera = ['tab-ingreso', 'tab-egreso', 'tab-traslado', 'tab-inventario'].find(t => usuarioActual.permisos.includes(t.replace('-', '_')));
+                if(primera) {
+                    switchTab(primera, document.getElementById('btn_btn_' + primera.replace('-', '_')) || document.querySelectorAll('.tab')[0]);
+                    if(primera === 'tab-inventario') cargarInventario();
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        };
+
+        async function cargarCatalogosRemotos() {
+            const { data: ubis } = await supabaseClient.from('ubicaciones').select('nombre');
+            const { data: dims } = await supabaseClient.from('dimensiones').select('nombre');
+            window.ubicacionesDB = ubis ? ubis.map(u => u.nombre) : [];
+            window.dimensionesDB = dims ? dims.map(d => d.nombre) : [];
+            actualizarSelectores();
+        }
+
+        async function actualizarSiguienteSerie() {
+            const { data: cajas } = await supabaseClient.from('cajas').select('serial').order('serial', { ascending: false }).limit(1);
+            let ultimoSerial = (cajas && cajas.length > 0) ? cajas[0].serial : null;
+            let siguiente = "LAA-001";
+            if (ultimoSerial) {
+                let partes = ultimoSerial.split('-');
+                let letras = partes[0]; 
+                let numero = parseInt(partes[1]) + 1; 
+                if (numero > 999) {
+                    numero = 1;
+                    let l1 = letras[0], l2 = letras[1], l3 = letras[2];
+                    let charCode3 = l3.charCodeAt(0) + 1;
+                    if (charCode3 > 90) {
+                        charCode3 = 65;
+                        let charCode2 = l2.charCodeAt(0) + 1;
+                        if (charCode2 > 90) {
+                            charCode2 = 65;
+                            let charCode1 = l1.charCodeAt(0) + 1;
+                            l1 = String.fromCharCode(charCode1);
+                        }
+                        l2 = String.fromCharCode(charCode2);
+                    }
+                    l3 = String.fromCharCode(charCode3);
+                    letras = l1 + l2 + l3;
+                }
+                siguiente = `${letras}-${String(numero).padStart(3, '0')}`;
+            }
+            const inputSerial = document.getElementById('in_serial');
+            if(inputSerial) inputSerial.value = siguiente;
+        }
+
+        function actualizarSelectores() {
+            const selectsUbi = [document.getElementById('in_ubi'), document.getElementById('tr_ubi')];
+            selectsUbi.forEach(sel => {
+                if(!sel) return;
+                const valorActual = sel.value;
+                sel.innerHTML = '<option value="">-- Seleccione Ubicación --</option>';
+                (window.ubicacionesDB || []).forEach(ubi => {
+                    const opt = document.createElement('option');
+                    opt.value = ubi; opt.innerText = ubi;
+                    sel.appendChild(opt);
+                });
+                sel.value = valorActual;
+            });
+
+            const selDim = document.getElementById('in_dim');
+            if(selDim) {
+                const valorActualDim = selDim.value;
+                selDim.innerHTML = '<option value="">-- Seleccione Dimensión --</option>';
+                (window.dimensionesDB || []).forEach(dim => {
+                    const opt = document.createElement('option');
+                    opt.value = dim; opt.innerText = dim;
+                    selDim.appendChild(opt);
+                });
+                selDim.value = valorActualDim;
+            }
+        }
+
+        function cerrarSesion() {
+            cerrarEscanerCamara();
+            sessionStorage.removeItem('sgcf_sesion_cloud');
+            window.location.href = 'login.html';
+        }
+
+        function switchTab(tabId, element) {
+            cerrarEscanerCamara();
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const tabEl = document.getElementById(tabId);
+            if(tabEl) tabEl.classList.add('active');
+            if(element) element.classList.add('active');
+            
+            if(tabId === 'tab-ingreso') { actualizarSiguienteSerie(); setTimeout(()=> document.getElementById('in_dim').focus(), 100); }
+            if(tabId === 'tab-egreso') setTimeout(()=> document.getElementById('eg_serial').focus(), 100);
+            if(tabId === 'tab-traslado') setTimeout(()=> document.getElementById('tr_serial').focus(), 100);
+        }
+
+        function toggleDniReceptor() {
+            const activar = document.getElementById('chk_activar_dni').checked;
+            document.getElementById('contenedor_dni_receptor').style.display = activar ? 'block' : 'none';
+            if(!activar) document.getElementById('eg_dni').value = '';
+        }
+
+        function iniciarEscanerCamara(idCampoDestino) {
+            campoDestinoEscaneo = idCampoDestino;
+            const container = document.getElementById('reader-container');
+            const tabActiva = document.querySelector('.tab-content.active');
+            tabActiva.appendChild(container);
+            container.style.display = 'block';
+            if (!html5QrCodeScanner) html5QrCodeScanner = new Html5Qrcode("qr-reader");
+            html5QrCodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } },
+                (decodedText) => {
+                    if (campoDestinoEscaneo) document.getElementById(campoDestinoEscaneo).value = decodedText.trim();
+                    cerrarEscanerCamara();
+                }, () => {}
+            ).catch(() => { alert("⚠️ No se pudo acceder a la cámara."); container.style.display = 'none'; });
+        }
+
+        function cerrarEscanerCamara() {
+            const container = document.getElementById('reader-container');
+            if (html5QrCodeScanner && container.style.display === 'block') {
+                html5QrCodeScanner.stop().catch(() => {}).finally(() => { container.style.display = 'none'; });
+            } else { container.style.display = 'none'; }
+        }
+
+        async function procesarIngreso() {
+            const serial = document.getElementById('in_serial').value.trim();
+            const desc = document.getElementById('in_desc').value.trim() || '-';
+            const dim = document.getElementById('in_dim').value;
+            const ubi = document.getElementById('in_ubi').value;
+            const imprimirAutomatico = document.getElementById('chk_imprimir_al_registrar').checked;
+
+            if (!serial || !dim || !ubi) return alert("⚠️ Faltan datos obligatorios.");
+
+            const { data: existe } = await supabaseClient.from('cajas').select('serial').eq('serial', serial).single();
+            if (existe) return alert("⚠️ Este número de serie ya existe.");
+
+            await supabaseClient.from('cajas').insert([{ serial, descrip: desc, dim, ubi, estado: 'EN ALMACEN', operador: usuarioActual.nombre, receptor: '-' }]);
+
+            if (imprimirAutomatico) {
+                const printArea = document.getElementById('print-area');
+                printArea.innerHTML = `<div class="label-box"><div class="label-barcode"><svg class="print-barcode-svg" data-serial="${serial}"></svg></div></div>`;
+                JsBarcode(".print-barcode-svg", serial, { format: "CODE128", lineColor: "#000000", width: 3, height: 180, displayValue: true, fontSize: 26, textMargin: 8 });
+                setTimeout(() => window.print(), 600);
+                alert("✅ Caja registrada e impresión enviada.");
+            } else { alert("✅ Caja registrada con éxito."); }
+
+            document.getElementById('in_desc').value = ''; 
+            document.getElementById('in_dim').value = '';
+            document.getElementById('in_ubi').value = '';
+            actualizarSiguienteSerie();
+            document.getElementById('in_dim').focus();
+        }
+
+        async function procesarEgreso() {
+            const serial = document.getElementById('eg_serial').value.trim();
+            const nombre = document.getElementById('eg_nombre').value.trim();
+            const activarDni = document.getElementById('chk_activar_dni').checked;
+            const dni = document.getElementById('eg_dni').value.trim();
+
+            if(!serial || !nombre) return alert("⚠️ Complete la Serie y el Nombre del receptor.");
+            if(activarDni && dni.length !== 8) return alert("⚠️ El DNI debe tener 8 dígitos.");
+            
+            const { data: caja } = await supabaseClient.from('cajas').select('*').eq('serial', serial).single();
+            if(!caja) return alert("⚠️ La caja no existe.");
+            if(caja.estado === 'DESPACHADO') return alert("⚠️ Ya figura como despachada.");
+
+            await supabaseClient.from('cajas').update({ estado: 'DESPACHADO', ubi: '-', receptor: nombre, operador: usuarioActual.nombre }).eq('serial', serial);
+
+            let infoDniText = activarDni ? ` (DNI: ${dni})` : '';
+            enviarTelegram(`🚨 ALERTA: Caja ${serial} despachada.\n\n👤 Receptor: ${nombre}${infoDniText}\n👨‍💻 Operador: ${usuarioActual.nombre}`);
+
+            alert("✅ Despacho confirmado.");
+            document.getElementById('eg_serial').value = ''; 
+            document.getElementById('eg_nombre').value = ''; 
+            document.getElementById('eg_dni').value = '';
+            document.getElementById('chk_activar_dni').checked = false;
+            document.getElementById('contenedor_dni_receptor').style.display = 'none';
+            document.getElementById('eg_serial').focus();
+        }
+
+        async function procesarTraslado() {
+            const serial = document.getElementById('tr_serial').value.trim();
+            const nuevaUbi = document.getElementById('tr_ubi').value;
+            if(!serial || !nuevaUbi) return alert("⚠️ Complete serie y nueva ubicación.");
+
+            const { data: caja } = await supabaseClient.from('cajas').select('*').eq('serial', serial).single();
+            if(!caja) return alert("⚠️ La caja no existe.");
+            if(caja.estado === 'DESPACHADO') return alert("⚠️ No se puede trasladar una caja despachada.");
+
+            await supabaseClient.from('cajas').update({ ubi: nuevaUbi }).eq('serial', serial);
+            alert("✅ Caja reubicada.");
+            document.getElementById('tr_serial').value = '';
+            document.getElementById('tr_ubi').value = '';
+            document.getElementById('tr_serial').focus();
+        }
+
+        async function cargarInventario() {
+            const { data: cajas } = await supabaseClient.from('cajas').select('*').order('serial', { ascending: false });
+            cacheInventario = cajas || [];
+            renderizarTablaInventario(cacheInventario);
+        }
+
+        function filtrarInventario() {
+            const texto = document.getElementById('buscador_inventario').value.toLowerCase();
+            const filtrados = cacheInventario.filter(c => {
+                return (c.serial || '').toLowerCase().includes(texto) || 
+                       (c.ubi || '').toLowerCase().includes(texto) || 
+                       (c.descrip || '').toLowerCase().includes(texto) || 
+                       (c.receptor || '').toLowerCase().includes(texto);
+            });
+            renderizarTablaInventario(filtrados);
+        }
+
+        function renderizarTablaInventario(lista) {
+            const tbody = document.getElementById('tabla_inventario');
+            tbody.innerHTML = '';
+            lista.forEach(c => {
+                const tr = document.createElement('tr');
+                const esDespachado = c.estado === 'DESPACHADO';
+                const claseEstado = esDespachado ? 'estado-despachado' : 'estado-almacen';
+                tr.innerHTML = `
+                    <td style="color:var(--accent-main); font-weight:bold;">${c.serial}</td>
+                    <td>${c.descrip || '-'}</td>
+                    <td>${c.dim || '-'}</td>
+                    <td>${c.ubi}</td>
+                    <td class="${claseEstado}">${c.estado || 'EN ALMACEN'}</td>
+                    <td>${c.operador}</td>
+                    <td>${c.receptor || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function enviarTelegram(mensaje) {
+            const BOT_TOKEN = "8883029300:AAHROFzc79K3ma8CilUe9owBVknVWnLcxlk"; 
+            const CHAT_ID = "8610486327"; 
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(mensaje)}`).catch(() => {});
+        }
+    </script>
+</body>
+</html>
