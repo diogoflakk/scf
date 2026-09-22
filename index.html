@@ -2,13 +2,129 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=login.html">
-    <title>Redirigiendo a Sistema GCF...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISTEMA GCF - INICIO</title>
+
+    <link rel="icon" type="image/png" href="logo.png">
+    
+    <!-- ESTILOS GENERALIZADOS DE TEMA -->
+    <link rel="stylesheet" href="theme.css">
+    
+    <!-- SCRIPT GENERALIZADO DE TEMA -->
+    <script src="theme.js"></script>
+    
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: var(--bg-base); 
+            color: var(--text-main); 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+        }
+        .welcome-box { 
+            background: var(--bg-surface); 
+            padding: 50px 40px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+            width: 100%; 
+            max-width: 450px; 
+            text-align: center; 
+        }
+        /* Barra de progreso de carga */
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background: var(--input-bg);
+            border-radius: 3px;
+            margin-top: 30px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--accent-main);
+            transition: width 0.1s linear;
+        }
+        .btn-ingresar-manual {
+            margin-top: 20px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            width: 100%;
+            text-transform: uppercase;
+            transition: 0.2s;
+        }
+        .btn-ingresar-manual:hover {
+            border-color: var(--accent-main);
+            color: var(--text-main);
+        }
+    </style>
 </head>
-<body style="background: #050505; color: #FFF; font-family: sans-serif; text-align: center; padding-top: 50px;">
-    <p>Cargando Sistema GCF...</p>
+<body>
+    <!-- BOTÓN FLOTANTE CIRCULAR PARA EL TEMA -->
+    <button class="theme-float-btn" onclick="alternarTema()" title="Cambiar Tema">🌓</button>
+
+    <div class="welcome-box">
+        <div style="margin-bottom: 20px;">
+            <img src="logo.png" alt="Logo GCF" style="height: 64px; width: auto; object-fit: contain;">
+        </div>
+
+        <h1 style="color: var(--text-main); margin-top: 0; font-size: 26px;">SISTEMA GCF</h1>
+        <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 15px;">Control de Caja y Almacén</p>
+        
+        <p id="countdown-text" style="color: var(--accent-main); font-weight: 600; font-size: 13px; margin-top: 15px;">Cargando sistema en 3 segundos...</p>
+
+        <div class="progress-bar-container">
+            <div id="progress" class="progress-bar"></div>
+        </div>
+
+        <button class="btn-ingresar-manual" onclick="irAlLogin()">Ingresar de inmediato ➔</button>
+    </div>
+
     <script>
-        window.location.href = "login.html";
+        // TIEMPO DE ESPERA EN MILISEGUNDOS (Ej: 3000 = 3 segundos)
+        const tiempoEsperaMs = 3000; 
+        const intervaloActualizacion = 30; // Para fluidez de la barra
+        let tiempoTranscurrido = 0;
+
+        const barraProgreso = document.getElementById('progress');
+        const textoCuenta = document.getElementById('countdown-text');
+
+        function irAlLogin() {
+            // Nota: Si tu login es .html usa 'login.html', si es PHP usa 'login.php'
+            window.location.href = 'login.html'; 
+        }
+
+        // Animación de la barra de carga y cuenta regresiva
+        const temporizador = setInterval(() => {
+            tiempoTranscurrido += intervaloActualizacion;
+            let porcentaje = (tiempoTranscurrido / tiempoEsperaMs) * 100;
+            
+            if (porcentaje >= 100) {
+                porcentaje = 100;
+                clearInterval(temporizador);
+                irAlLogin();
+            }
+
+            barraProgreso.style.width = porcentaje + '%';
+            
+            let segundosRestantes = Math.ceil((tiempoEsperaMs - tiempoTranscurrido) / 1000);
+            if (segundosRestantes > 0) {
+                textoCuenta.innerText = `Cargando sistema en ${segundosRestantes} segundo${segundosRestantes > 1 ? 's' : ''}...`;
+            } else {
+                textoCuenta.innerText = `Redirigiendo...`;
+            }
+        }, intervaloActualizacion);
     </script>
 </body>
 </html>
