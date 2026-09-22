@@ -7,10 +7,10 @@
 
     <link rel="icon" type="image/png" href="logo.png">
     
-    <!-- ESTILOS GENERALIZADOS DE TEMA -->
+
     <link rel="stylesheet" href="theme.css">
     
-    <!-- SCRIPT GENERALIZADO DE TEMA -->
+
     <script src="theme.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -31,7 +31,7 @@
     </style>
 </head>
 <body>
-    <!-- BOTÓN FLOTANTE CIRCULAR EN LA ESQUINA INFERIOR DERECHA -->
+
     <button class="theme-float-btn" onclick="alternarTema()" title="Cambiar Tema">🌓</button>
 
     <div class="login-box">
@@ -40,7 +40,7 @@
         </div>
 
         <h1 style="color: var(--text-main); margin-top: 0; font-size: 24px;">SISTEMA GCF</h1>
-        <p style="color: var(--text-muted); margin-bottom: 25px;">Ingrese sus credenciales corporativas</p>
+        <p style="color: var(--text-muted); margin-bottom: 25px;">Ingrese sus credenciales</p>
         
         <div class="form-group">
             <label>Ingrese su DNI (8 dígitos):</label>
@@ -86,7 +86,7 @@
                         msg.innerText = `Ingrese PIN para ${user.nombre}:`;
                         msg.style.color = "var(--text-main)";
                         inputPin.style.borderColor = "var(--border-color)";
-                        btn.innerText = "ACCEDER";
+                        btn.innerText = "INICIAR SESIÓN";
                         btn.className = "";
                     }
                 } else {
