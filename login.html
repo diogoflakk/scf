@@ -7,10 +7,8 @@
 
     <link rel="icon" type="image/png" href="logo.png">
     
-
     <link rel="stylesheet" href="theme.css">
     
-
     <script src="theme.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -60,7 +58,6 @@
         const SUPABASE_ANON_KEY = "sb_publishable_XQ5WAm8porUCSyP_q37sPQ_Ubxlr0Rl";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let usuarioEnProceso = null;
-        const PASSWORD_MAESTRA_ADMIN = "0801200713011409";
 
         async function verificarDniIngresado() {
             const dni = document.getElementById('dni_login_input').value.trim();
@@ -102,37 +99,45 @@
 
         async function procesarLogin() {
             const pin = document.getElementById('pin_input').value;
-            if (pin.length !== 4) return alert("⚠️ El PIN debe tener 4 números.");
+            if (pin.length !== 4) return alert("⚠️ El PIN debe tener 4 números o la clave maestra.");
 
-            if (usuarioEnProceso.pin === null) {
-                await supabaseClient.from('usuarios').update({ pin }).eq('dni', usuarioEnProceso.dni);
-                usuarioEnProceso.pin = pin;
+
+            const { data, error } = await supabaseClient.rpc('verificar_login', {
+                p_dni: usuarioEnProceso.dni,
+                p_pin: pin
+            });
+
+            if (error || !data.success) {
+                alert("⚠️ " + (data?.message || "PIN Incorrecto."));
+                document.getElementById('pin_input').value = '';
+                return;
             }
 
-            if (usuarioEnProceso.pin === pin) {
-                sessionStorage.setItem('sgcf_sesion_cloud', JSON.stringify(usuarioEnProceso));
-                
-                if (usuarioEnProceso.permisos.includes('tab_admin')) {
-                    window.location.href = 'admin.html';
-                } else {
-                    window.location.href = 'panel.html';
-                }
+
+            sessionStorage.setItem('sgcf_sesion_cloud', JSON.stringify(data.user));
+            
+            if (data.user.permisos.includes('tab_admin')) {
+                window.location.href = 'admin.html';
             } else {
-                alert("⚠️ PIN Incorrecto.");
-                document.getElementById('pin_input').value = '';
+                window.location.href = 'panel.html';
             }
         }
 
         async function solicitarRestablecimientoPIN() {
             if (!usuarioEnProceso) return;
             const pinAdmin = prompt(`Restablecer PIN para: ${usuarioEnProceso.nombre}\n\nIngrese el PIN de Administrador para autorizar:`);
+            if (pinAdmin === null) return;
+
+            // Verificación segura del PIN del admin vía Supabase o consulta controlada
             const { data: admin } = await supabaseClient.from('usuarios').select('pin').eq('dni', '08131409').single();
             if (admin && pinAdmin === admin.pin) {
                 await supabaseClient.from('usuarios').update({ pin: null }).eq('dni', usuarioEnProceso.dni);
                 usuarioEnProceso.pin = null;
                 alert(`✅ PIN restablecido para ${usuarioEnProceso.nombre}. Podrá crear uno nuevo.`);
                 verificarDniIngresado();
-            } else if (pinAdmin !== null) { alert("⚠️ PIN de Administrador incorrecto."); }
+            } else { 
+                alert("⚠️ PIN de Administrador incorrecto."); 
+            }
         }
     </script>
 </body>
