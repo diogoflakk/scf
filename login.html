@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISTEMA GCF - LOGIN</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --bg-base: #050505; --bg-surface: #121212; 
+            --accent-main: #FF3B30; --accent-success: #00E676; 
+            --accent-gold: #FFD700; --text-main: #FDFCF7; 
+            --text-muted: #B5A89E; --border-color: #2E1A1A;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .login-box { background: var(--bg-surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.8); width: 100%; max-width: 450px; text-align: center; }
+        .dni-input { width: 100%; font-size: 24px; text-align: center; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: #0A0A0A; color: #FFF; border: 1px solid var(--border-color); font-weight: bold; box-sizing: border-box; }
+        .dni-input:focus { border-color: var(--accent-main); outline: none; }
+        .pin-input { width: 100%; font-size: 36px; text-align: center; letter-spacing: 15px; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: #0A0A0A; color: var(--accent-main); border: 1px solid var(--border-color); box-sizing: border-box; transition: 0.3s; }
+        .pin-input:focus { border-color: var(--accent-main); outline: none; }
+        button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        button:hover { background: #FF5B52; }
+        button.btn-success { background: var(--accent-success); color: #000; font-weight: 800; }
+        .btn-reset { background: transparent; color: var(--text-muted); border: none; font-size: 13px; margin-top: 15px; cursor: pointer; text-decoration: underline; width: auto; padding: 5px; }
+        .btn-reset:hover { color: var(--text-main); }
+        .form-group { margin-bottom: 25px; text-align: left; }
+        label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1 style="color: #FFF; margin-top: 0; font-size: 24px;">SISTEMA GCF</h1>
+        <p style="color: var(--text-muted); margin-bottom: 25px;">Ingrese sus credenciales corporativas</p>
+        
+        <div class="form-group">
+            <label>Ingrese su DNI (8 dígitos):</label>
+            <input type="tel" id="dni_login_input" class="dni-input" maxlength="8" placeholder="--------" autofocus oninput="verificarDniIngresado()">
+        </div>
+
+        <div id="seccion_pin" style="display:none;">
+            <p id="pin_message" style="color: var(--text-main); font-weight: 600; font-size: 15px; margin-bottom: 10px;">PIN:</p>
+            <input type="password" id="pin_input" class="pin-input" maxlength="4" placeholder="****" inputmode="numeric" onkeyup="checkEnter(event)">
+            <button id="btn_login" onclick="procesarLogin()">INICIAR SESIÓN</button>
+            <button class="btn-reset" onclick="solicitarRestablecimientoPIN()">🔑 ¿Olvidaste tu PIN? Restablecer</button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://yopvikmrjnqcbkkubcbs.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_XQ5WAm8porUCSyP_q37sPQ_Ubxlr0Rl";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let usuarioEnProceso = null;
+        const PASSWORD_MAESTRA_ADMIN = "0801200713011409";
+
+        async function verificarDniIngresado() {
+            const dni = document.getElementById('dni_login_input').value.trim();
+            const seccionPin = document.getElementById('seccion_pin');
+            const msg = document.getElementById('pin_message');
+            const btn = document.getElementById('btn_login');
+            const inputPin = document.getElementById('pin_input');
+
+            if (dni.length === 8) {
+                const { data: user } = await supabaseClient.from('usuarios').select('*').eq('dni', dni).single();
+                if (user) {
+                    usuarioEnProceso = user;
+                    seccionPin.style.display = 'block';
+                    inputPin.value = '';
+                    inputPin.focus();
+                    if (user.pin === null) {
+                        msg.innerText = `👋 Hola ${user.nombre.split(' ')[0]}, crea tu PIN de 4 dígitos:`;
+                        msg.style.color = "var(--accent-success)";
+                        inputPin.style.borderColor = "var(--accent-success)";
+                        btn.innerText = "GUARDAR MI PIN Y ENTRAR";
+                        btn.className = "btn-success";
+                    } else {
+                        msg.innerText = `Ingrese PIN para ${user.nombre}:`;
+                        msg.style.color = "var(--text-main)";
+                        inputPin.style.borderColor = "var(--border-color)";
+                        btn.innerText = "ACCEDER";
+                        btn.className = "";
+                    }
+                } else {
+                    seccionPin.style.display = 'none';
+                    alert("⚠️ DNI no registrado.");
+                }
+            } else {
+                seccionPin.style.display = 'none';
+            }
+        }
+
+        function checkEnter(e) { if (e.key === 'Enter') procesarLogin(); }
+
+        async function procesarLogin() {
+            const pin = document.getElementById('pin_input').value;
+            if (pin.length !== 4) return alert("⚠️ El PIN debe tener 4 números.");
+
+            if (usuarioEnProceso.pin === null) {
+                await supabaseClient.from('usuarios').update({ pin }).eq('dni', usuarioEnProceso.dni);
+                usuarioEnProceso.pin = pin;
+            }
+
+            if (usuarioEnProceso.pin === pin) {
+                sessionStorage.setItem('sgcf_sesion_cloud', JSON.stringify(usuarioEnProceso));
+                
+                // Redirección inteligente según rol
+                if (usuarioEnProceso.permisos.includes('tab_admin')) {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'panel.html';
+                }
+            } else {
+                alert("⚠️ PIN Incorrecto.");
+                document.getElementById('pin_input').value = '';
+            }
+        }
+
+        async function solicitarRestablecimientoPIN() {
+            if (!usuarioEnProceso) return;
+            const pinAdmin = prompt(`Restablecer PIN para: ${usuarioEnProceso.nombre}\n\nIngrese el PIN de Administrador para autorizar:`);
+            const { data: admin } = await supabaseClient.from('usuarios').select('pin').eq('dni', '08131409').single();
+            if (admin && pinAdmin === admin.pin) {
+                await supabaseClient.from('usuarios').update({ pin: null }).eq('dni', usuarioEnProceso.dni);
+                usuarioEnProceso.pin = null;
+                alert(`✅ PIN restablecido para ${usuarioEnProceso.nombre}. Podrá crear uno nuevo.`);
+                verificarDniIngresado();
+            } else if (pinAdmin !== null) { alert("⚠️ PIN de Administrador incorrecto."); }
+        }
+    </script>
+</body>
+</html>
