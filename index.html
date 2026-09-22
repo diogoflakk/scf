@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SISTEMA GCF - INICIO</title>
+    <title>SISTEMA GCF </title>
 
     <link rel="icon" type="image/png" href="logo.png">
     
-    <!-- ESTILOS GENERALIZADOS DE TEMA -->
+
     <link rel="stylesheet" href="theme.css">
     
-    <!-- SCRIPT GENERALIZADO DE TEMA -->
+
     <script src="theme.js"></script>
     
     <style>
@@ -34,7 +34,7 @@
             max-width: 450px; 
             text-align: center; 
         }
-        /* Barra de progreso de carga */
+
         .progress-bar-container {
             width: 100%;
             height: 6px;
@@ -50,28 +50,10 @@
             background: var(--accent-main);
             transition: width 0.1s linear;
         }
-        .btn-ingresar-manual {
-            margin-top: 20px;
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            width: 100%;
-            text-transform: uppercase;
-            transition: 0.2s;
-        }
-        .btn-ingresar-manual:hover {
-            border-color: var(--accent-main);
-            color: var(--text-main);
-        }
     </style>
 </head>
 <body>
-    <!-- BOTÓN FLOTANTE CIRCULAR PARA EL TEMA -->
+
     <button class="theme-float-btn" onclick="alternarTema()" title="Cambiar Tema">🌓</button>
 
     <div class="welcome-box">
@@ -82,30 +64,28 @@
         <h1 style="color: var(--text-main); margin-top: 0; font-size: 26px;">SISTEMA GCF</h1>
         <p style="color: var(--text-muted); margin-bottom: 10px; font-size: 15px;">Control de Caja y Almacén</p>
         
-        <p id="countdown-text" style="color: var(--accent-main); font-weight: 600; font-size: 13px; margin-top: 15px;">Cargando sistema en 3 segundos...</p>
+        <p id="countdown-text" style="color: var(--accent-main); font-weight: 600; font-size: 13px; margin-top: 15px;">Cargando sistema en 5 segundos...</p>
 
         <div class="progress-bar-container">
             <div id="progress" class="progress-bar"></div>
         </div>
-
-        <button class="btn-ingresar-manual" onclick="irAlLogin()">Ingresar de inmediato ➔</button>
     </div>
 
     <script>
-        // TIEMPO DE ESPERA EN MILISEGUNDOS (Ej: 3000 = 3 segundos)
-        const tiempoEsperaMs = 3000; 
-        const intervaloActualizacion = 30; // Para fluidez de la barra
+
+        const tiempoEsperaMs = 5000; 
+        const intervaloActualizacion = 30; 
         let tiempoTranscurrido = 0;
 
         const barraProgreso = document.getElementById('progress');
         const textoCuenta = document.getElementById('countdown-text');
 
         function irAlLogin() {
-            // Nota: Si tu login es .html usa 'login.html', si es PHP usa 'login.php'
+
             window.location.href = 'login.html'; 
         }
 
-        // Animación de la barra de carga y cuenta regresiva
+
         const temporizador = setInterval(() => {
             tiempoTranscurrido += intervaloActualizacion;
             let porcentaje = (tiempoTranscurrido / tiempoEsperaMs) * 100;
