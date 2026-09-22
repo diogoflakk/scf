@@ -105,7 +105,6 @@
             if (usuarioEnProceso.pin === pin) {
                 sessionStorage.setItem('sgcf_sesion_cloud', JSON.stringify(usuarioEnProceso));
                 
-                // Redirección inteligente según rol
                 if (usuarioEnProceso.permisos.includes('tab_admin')) {
                     window.location.href = 'admin.html';
                 } else {
