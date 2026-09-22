@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SISTEMA GCF - PANEL DE CONTROL</title>
+    <!-- LOGO EN LA PESTAÑA DEL NAVEGADOR (FAVICON) -->
+    <link rel="icon" type="image/png" href="logo.png">
+    
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -59,13 +62,9 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- ENCABEZADO CON LOGO INTEGRADO -->
+        <!-- ENCABEZADO SIN LOGO -->
         <div class="header">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <!-- Asegúrate de subir tu archivo 'logo.png' a la misma carpeta en GitHub -->
-                <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
-                <h1>⚙️ Panel de Administración</h1>
-            </div>
+            <h1>⚙️ Panel de Administración</h1>
             <div class="user-badge">
                 👤 <span id="current_user_name">Admin</span>
                 <button class="btn-logout" onclick="cerrarSesion()">SALIR</button>
