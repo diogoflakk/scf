@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SISTEMA GCF - PANEL OPERATIVO</title>
+    <!-- FAVICON (LOGO EN LA PESTAÑA DEL NAVEGADOR) -->
+    <link rel="icon" type="image/png" href="logo.png">
+    
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -185,8 +188,6 @@
             const sesionGuardada = sessionStorage.getItem('sgcf_sesion_cloud');
             if(sesionGuardada) {
                 usuarioActual = JSON.parse(sesionGuardada);
-                // Si por alguna razón un admin entra aquí, lo dejamos o podemos redirigirlo, 
-                // pero permitimos que los permisos validen las pestañas.
                 await cargarCatalogosRemotos();
                 actualizarSiguienteSerie();
                 
@@ -200,13 +201,11 @@
 
                 document.getElementById('current_user_name').innerText = usuarioActual.nombre;
                 
-                // Ocultar pestañas no permitidas
                 if(!usuarioActual.permisos.includes('tab_ingreso')) document.getElementById('btn_tab_ingreso').style.display = 'none';
                 if(!usuarioActual.permisos.includes('tab_egreso')) document.getElementById('btn_tab_egreso').style.display = 'none';
                 if(!usuarioActual.permisos.includes('tab_traslado')) document.getElementById('btn_tab_traslado').style.display = 'none';
                 if(!usuarioActual.permisos.includes('tab_inventario')) document.getElementById('btn_tab_inventario').style.display = 'none';
 
-                // Activar primera pestaña disponible
                 let primera = ['tab-ingreso', 'tab-egreso', 'tab-traslado', 'tab-inventario'].find(t => usuarioActual.permisos.includes(t.replace('-', '_')));
                 if(primera) {
                     switchTab(primera, document.getElementById('btn_btn_' + primera.replace('-', '_')) || document.querySelectorAll('.tab')[0]);
