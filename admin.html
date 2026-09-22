@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SISTEMA GCF - PANEL DE ADMINISTRACIÓN</title>
+    <title>SISTEMA GCF - PANEL DE CONTROL</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -64,7 +64,7 @@
             <div style="display: flex; align-items: center; gap: 12px;">
                 <!-- Asegúrate de subir tu archivo 'logo.png' a la misma carpeta en GitHub -->
                 <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
-                <h1>⚙️ Panel Exclusivo de Administración</h1>
+                <h1>⚙️ Panel de Administración</h1>
             </div>
             <div class="user-badge">
                 👤 <span id="current_user_name">Admin</span>
@@ -74,17 +74,17 @@
 
         <div style="margin-bottom: 25px; display: flex; gap: 15px; align-items: center;">
             <a href="panel.html" style="color: var(--accent-gold); text-decoration: underline; font-weight: bold;">⬅️ Ir al Panel Operativo</a>
-            <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ LIMPIAR TODAS LAS CAJAS</button>
+            <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ ELIMINAR DATOS</button>
         </div>
 
         <!-- IMPRESIÓN MÚLTIPLE EN LOTE -->
         <div class="admin-card full-width" style="margin-bottom: 25px;">
-            <h3 style="color: var(--accent-gold);">🖨️ Impresión Múltiple de Etiquetas por Rangos</h3>
+            <h3 style="color: var(--accent-gold);">🖨️ Impresión Múltiple</h3>
             <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 250px;">
                     <label style="font-size: 13px;">Método de selección:</label>
                     <select id="metodo_impresion" onchange="cambiarMetodoImpresion()">
-                        <option value="rango">Generar por Rango de Series (Ej: LAA-001 al LAA-010)</option>
+                        <option value="rango">Generar por Rango de Series (Ej: LAA-001 al LAA-100)</option>
                     </select>
                 </div>
             </div>
@@ -145,7 +145,7 @@
                     </div>
                 </div>
                 
-                <h4 style="margin-top: 35px; border-top: 1px solid var(--border-color); padding-top: 20px; color: #FFF;">Operadores Activos:</h4>
+                <h4 style="margin-top: 35px; border-top: 1px solid var(--border-color); padding-top: 20px; color: #FFF;">Usuarios Activos:</h4>
                 <div id="lista_usuarios" class="table-responsive"></div>
             </div>
         </div>
