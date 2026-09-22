@@ -161,7 +161,6 @@
             const sesionGuardada = sessionStorage.getItem('sgcf_sesion_cloud');
             if(sesionGuardada) {
                 usuarioActual = JSON.parse(sesionGuardada);
-                // Escudo estricto: si no es admin, fuera
                 if (!usuarioActual.permisos.includes('tab_admin')) {
                     alert("⚠️ Acceso denegado. Se requieren privilegios de Administrador.");
                     window.location.href = 'panel.html';
@@ -200,14 +199,44 @@
             `).join('');
 
             const { data: usuarios } = await supabaseClient.from('usuarios').select('*');
-            let htmlUsers = "<table><tr><th>DNI</th><th>Nombre</th><th>Rol</th><th>Funciones</th><th>Acciones</th></tr>";
+            let htmlUsers = "<table><tr><th>DNI</th><th>Nombre</th><th>Rol</th><th>Funciones</th><th style='text-align: center;'>Acciones</th></tr>";
+            
             (usuarios || []).forEach(u => {
-                let descPermisos = (u.permisos || []).join(', ');
-                let acciones = u.dni === '08131409' ? 
-                    `<button class="btn-warning" style="padding:6px 12px; font-size:12px; width:auto;" onclick="cargarEdicionUsuarioAdminPrincipal('${u.dni}')">🔒 Modificar</button>` :
-                    `<button class="btn-warning" style="padding:6px 12px; font-size:12px; width:auto; margin-right:6px;" onclick="cargarEdicionUsuario('${u.dni}')">Modificar</button>
-                     <button class="btn-danger" style="padding:6px 12px; font-size:12px; width:auto;" onclick="eliminarUsuario('${u.dni}')">Eliminar</button>`;
-                htmlUsers += `<tr><td>${u.dni}</td><td>${u.nombre}</td><td><b>${u.rol}</b></td><td style="font-size:13px; color:var(--text-muted);">${descPermisos}</td><td>${acciones}</td></tr>`;
+                let descPermisos = (u.permisos || []).map(p => {
+                    if(p === 'tab_ingreso') return '📥 Ingresos';
+                    if(p === 'tab_egreso') return '📤 Retiros';
+                    if(p === 'tab_traslado') return '🔄 Traslados';
+                    if(p === 'tab_inventario') return '📋 Inventario';
+                    if(p === 'tab_admin') return '⚙️ Admin';
+                    return p;
+                }).join(', ');
+
+                let acciones = "";
+                if (u.dni === '08131409') {
+                    acciones = `
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                            <button class="btn-warning" style="padding: 8px 14px; font-size: 12px; font-weight: bold; width: auto;" onclick="cargarEdicionUsuarioAdminPrincipal('${u.dni}')">🔒 MODIFICAR ADMIN</button>
+                            <span style="color: var(--accent-gold); font-weight: bold; font-size: 13px;">Principal</span>
+                        </div>
+                    `;
+                } else {
+                    acciones = `
+                        <div style="display: flex; gap: 8px; justify-content: center;">
+                            <button class="btn-warning" style="padding: 8px 12px; font-size: 12px; width: auto; font-weight: bold;" onclick="cargarEdicionUsuario('${u.dni}')">MODIFICAR</button>
+                            <button class="btn-danger" style="padding: 8px 12px; font-size: 12px; width: auto; font-weight: bold;" onclick="eliminarUsuario('${u.dni}')">ELIMINAR</button>
+                        </div>
+                    `;
+                }
+
+                htmlUsers += `
+                    <tr>
+                        <td>${u.dni}</td>
+                        <td>${u.nombre}</td>
+                        <td><b>${u.rol}</b></td>
+                        <td style="font-size: 13px; color: var(--text-main);">${descPermisos}</td>
+                        <td style="text-align: center;">${acciones}</td>
+                    </tr>
+                `;
             });
             htmlUsers += "</table>";
             document.getElementById('lista_usuarios').innerHTML = htmlUsers;
