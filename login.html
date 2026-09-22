@@ -7,23 +7,28 @@
 
     <link rel="icon" type="image/png" href="logo.png">
     
+
+    <link rel="stylesheet" href="theme.css">
+    
+
+    <script src="theme.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --bg-base: #050505; --bg-surface: #121212; 
-            --accent-main: #FF3B30; --accent-success: #00E676; 
-            --accent-gold: #FFD700; --text-main: #FDFCF7; 
-            --text-muted: #B5A89E; --border-color: #2E1A1A;
-        }
+
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        .login-box { background: var(--bg-surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.8); width: 100%; max-width: 450px; text-align: center; }
-        .dni-input { width: 100%; font-size: 24px; text-align: center; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: #0A0A0A; color: #FFF; border: 1px solid var(--border-color); font-weight: bold; box-sizing: border-box; }
+        
+        .theme-toggle { position: absolute; top: 20px; right: 20px; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .theme-toggle:hover { border-color: var(--accent-main); }
+
+        .login-box { background: var(--bg-surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 100%; max-width: 450px; text-align: center; }
+        .dni-input { width: 100%; font-size: 24px; text-align: center; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); font-weight: bold; box-sizing: border-box; }
         .dni-input:focus { border-color: var(--accent-main); outline: none; }
-        .pin-input { width: 100%; font-size: 36px; text-align: center; letter-spacing: 15px; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: #0A0A0A; color: var(--accent-main); border: 1px solid var(--border-color); box-sizing: border-box; transition: 0.3s; }
+        .pin-input { width: 100%; font-size: 36px; text-align: center; letter-spacing: 15px; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: var(--input-bg); color: var(--accent-main); border: 1px solid var(--border-color); box-sizing: border-box; transition: 0.3s; }
         .pin-input:focus { border-color: var(--accent-main); outline: none; }
         button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
-        button:hover { background: #FF5B52; }
-        button.btn-success { background: var(--accent-success); color: #000; font-weight: 800; }
+        button:hover { filter: brightness(1.1); }
+        button.btn-success { background: var(--accent-success); color: #FFF; font-weight: 800; }
         .btn-reset { background: transparent; color: var(--text-muted); border: none; font-size: 13px; margin-top: 15px; cursor: pointer; text-decoration: underline; width: auto; padding: 5px; }
         .btn-reset:hover { color: var(--text-main); }
         .form-group { margin-bottom: 25px; text-align: left; }
@@ -31,13 +36,14 @@
     </style>
 </head>
 <body>
-    <div class="login-box">
+    <button class="theme-toggle" onclick="alternarTema()">🌙 / ☀️</button>
 
+    <div class="login-box">
         <div style="margin-bottom: 15px;">
             <img src="logo.png" alt="Logo GCF" style="height: 48px; width: auto; object-fit: contain;">
         </div>
 
-        <h1 style="color: #FFF; margin-top: 0; font-size: 24px;">SISTEMA GCF</h1>
+        <h1 style="color: var(--text-main); margin-top: 0; font-size: 24px;">SISTEMA GCF</h1>
         <p style="color: var(--text-muted); margin-bottom: 25px;">Ingrese sus credenciales corporativas</p>
         
         <div class="form-group">
