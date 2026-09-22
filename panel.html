@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SISTEMA GCF - PANEL OPERATIVO</title>
+    <title>SISTEMA GCF - PANEL</title>
 
     <link rel="icon" type="image/png" href="logo.png">
     
@@ -266,7 +266,7 @@
             selectsUbi.forEach(sel => {
                 if(!sel) return;
                 const valorActual = sel.value;
-                sel.innerHTML = '<option value="">-- Seleccione Ubicación --</option>';
+                sel.innerHTML = '<option value="">-- Seleccione --</option>';
                 (window.ubicacionesDB || []).forEach(ubi => {
                     const opt = document.createElement('option');
                     opt.value = ubi; opt.innerText = ubi;
@@ -278,7 +278,7 @@
             const selDim = document.getElementById('in_dim');
             if(selDim) {
                 const valorActualDim = selDim.value;
-                selDim.innerHTML = '<option value="">-- Seleccione Dimensión --</option>';
+                selDim.innerHTML = '<option value="">-- Seleccione --</option>';
                 (window.dimensionesDB || []).forEach(dim => {
                     const opt = document.createElement('option');
                     opt.value = dim; opt.innerText = dim;
