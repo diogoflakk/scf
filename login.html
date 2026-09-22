@@ -7,20 +7,15 @@
 
     <link rel="icon" type="image/png" href="logo.png">
     
-
+    <!-- ESTILOS GENERALIZADOS DE TEMA -->
     <link rel="stylesheet" href="theme.css">
     
-
+    <!-- SCRIPT GENERALIZADO DE TEMA -->
     <script src="theme.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
-        
-        .theme-toggle { position: absolute; top: 20px; right: 20px; background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .theme-toggle:hover { border-color: var(--accent-main); }
-
         .login-box { background: var(--bg-surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 100%; max-width: 450px; text-align: center; }
         .dni-input { width: 100%; font-size: 24px; text-align: center; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); font-weight: bold; box-sizing: border-box; }
         .dni-input:focus { border-color: var(--accent-main); outline: none; }
@@ -36,7 +31,8 @@
     </style>
 </head>
 <body>
-    <button class="theme-toggle" onclick="alternarTema()">🌙 / ☀️</button>
+    <!-- BOTÓN FLOTANTE CIRCULAR EN LA ESQUINA INFERIOR DERECHA -->
+    <button class="theme-float-btn" onclick="alternarTema()" title="Cambiar Tema">🌓</button>
 
     <div class="login-box">
         <div style="margin-bottom: 15px;">
