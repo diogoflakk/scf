@@ -17,7 +17,7 @@
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; padding: 10px; }
         .app-container { max-width: 1000px; margin: 0 auto; background: var(--bg-surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 20px; }
         .header { background: #000000; color: var(--text-main); padding: 20px; border-bottom: 2px solid var(--accent-main); display: flex; justify-content: space-between; align-items: center; border-radius: 8px; margin-bottom: 25px; }
-        .header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #FFF; }
+        .header h1 { margin: 0; font-size: 20px; font-weight: 700; color: #FFF; }
         .user-badge { background: #1A1212; padding: 8px 15px; border-radius: 20px; font-size: 14px; font-weight: 600; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;}
         .btn-logout { background: transparent; color: #FF6B6B; border: 1px solid #FF6B6B; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .form-group { margin-bottom: 20px; }
@@ -59,8 +59,13 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- ENCABEZADO CON LOGO INTEGRADO -->
         <div class="header">
-            <h1>⚙️ Panel Exclusivo de Administración</h1>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <!-- Asegúrate de subir tu archivo 'logo.png' a la misma carpeta en GitHub -->
+                <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
+                <h1>⚙️ Panel Exclusivo de Administración</h1>
+            </div>
             <div class="user-badge">
                 👤 <span id="current_user_name">Admin</span>
                 <button class="btn-logout" onclick="cerrarSesion()">SALIR</button>
