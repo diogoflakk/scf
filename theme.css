@@ -18,4 +18,21 @@
     --card-bg: #F8FAFC; --row-even: #F1F5F9;
 }
 
-body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; transition: background 0.3s, color 0.3s; }
+body { 
+    font-family: 'Segoe UI', Tahoma, sans-serif; 
+    background: var(--bg-base); 
+    color: var(--text-main); 
+    margin: 0; 
+    transition: background 0.3s, color 0.3s; 
+}
+
+
+img[src*="logo.png"] {
+    filter: invert(1) hue-rotate(180deg);
+    transition: filter 0.3s ease;
+}
+
+
+[data-theme="light"] img[src*="logo.png"] {
+    filter: none;
+}
