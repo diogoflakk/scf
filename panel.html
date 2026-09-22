@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SISTEMA GCF - PANEL OPERATIVO</title>
-    <!-- FAVICON (LOGO EN LA PESTAÑA DEL NAVEGADOR) -->
+
     <link rel="icon" type="image/png" href="logo.png">
     
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -62,7 +62,11 @@
 <body>
     <div class="app-container" id="main-app">
         <div class="header">
-            <h1>Sistema GCF - Panel Operativo</h1>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
+                <h1>Sistema GCF - Panel Operativo</h1>
+            </div>
             <div class="user-badge">
                 👤 <span id="current_user_name">Operador</span>
                 <button class="btn-logout" onclick="cerrarSesion()">SALIR</button>
@@ -76,7 +80,7 @@
             <div id="btn_tab_inventario" class="tab" onclick="switchTab('tab-inventario', this); cargarInventario()">📋 INVENTARIO</div>
         </div>
 
-        <!-- INGRESO -->
+
         <div id="tab-ingreso" class="tab-content active">
             <div class="form-group">
                 <label>N° DE SERIE (Generado Automáticamente)</label>
@@ -99,7 +103,7 @@
             <button onclick="procesarIngreso()">📥 REGISTRAR CAJA</button>
         </div>
 
-        <!-- EGRESO -->
+
         <div id="tab-egreso" class="tab-content">
             <div class="form-group">
                 <label>N° DE SERIE A RETIRAR</label>
@@ -125,7 +129,7 @@
             <button class="btn-danger" onclick="procesarEgreso()">⚠️ CONFIRMAR SALIDA</button>
         </div>
 
-        <!-- TRASLADO -->
+
         <div id="tab-traslado" class="tab-content">
             <div class="form-group">
                 <label>N° DE SERIE A REUBICAR</label>
@@ -141,13 +145,13 @@
             <button onclick="procesarTraslado()">🔄 ACTUALIZAR UBICACIÓN</button>
         </div>
 
-        <!-- ESCANER DE CÁMARA -->
+
         <div id="reader-container" style="display: none; margin-bottom: 25px; background: #000000; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
             <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
             <button type="button" class="btn-danger" style="margin-top: 15px; padding: 10px;" onclick="cerrarEscanerCamara()">❌ Cancelar Escaneo</button>
         </div>
 
-        <!-- INVENTARIO -->
+
         <div id="tab-inventario" class="tab-content">
             <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
                 <h2 style="margin: 0; color: #FFF; font-size: 18px;">SEGUIMIENTO DEL INVENTARIO</h2>
