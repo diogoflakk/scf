@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SGCF - PANEL DE CONTROL</title>
-    <!-- LOGO EN LA PESTAÑA DEL NAVEGADOR (FAVICON) -->
+
     <link rel="icon" type="image/png" href="logo.png">
     
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -62,7 +62,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- ENCABEZADO SIN LOGO -->
+
         <div class="header">
             <h1>⚙️ PANEL DE CONTROL</h1>
             <div class="user-badge">
@@ -76,7 +76,7 @@
             <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ ELIMINAR DATOS</button>
         </div>
 
-        <!-- IMPRESIÓN MÚLTIPLE EN LOTE -->
+        
         <div class="admin-card full-width" style="margin-bottom: 25px;">
             <h3 style="color: var(--accent-gold);">🖨️ Impresión Múltiple</h3>
             <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
@@ -97,7 +97,7 @@
         </div>
 
         <div class="admin-grid">
-            <!-- UBICACIONES -->
+
             <div class="admin-card">
                 <h3>📍 Ubicaciones del Inventario</h3>
                 <div class="form-group">
@@ -108,7 +108,7 @@
                 <div id="lista_ubicaciones" style="max-height: 200px; overflow-y: auto;"></div>
             </div>
 
-            <!-- DIMENSIONES -->
+
             <div class="admin-card">
                 <h3>📦 Dimensiones de Cajas</h3>
                 <div class="form-group">
@@ -119,7 +119,7 @@
                 <div id="lista_dimensiones" style="max-height: 200px; overflow-y: auto;"></div>
             </div>
 
-            <!-- GESTIÓN DE USUARIOS -->
+
             <div class="admin-card full-width">
                 <h3 id="lbl_modo_usuario">👥 Gestión de Operadores, DNI y Roles</h3>
                 <div class="form-group">
