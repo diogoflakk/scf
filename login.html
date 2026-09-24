@@ -15,8 +15,8 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-base); color: var(--text-main); margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; }
         .login-box { background: var(--bg-surface); padding: 40px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 100%; max-width: 450px; text-align: center; }
-        .dni-input { width: 100%; font-size: 24px; text-align: center; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); font-weight: bold; box-sizing: border-box; }
-        .dni-input:focus { border-color: var(--accent-main); outline: none; }
+        .select-user { width: 100%; font-size: 16px; padding: 15px; border-radius: 8px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); font-weight: 500; box-sizing: border-box; margin-bottom: 20px; }
+        .select-user:focus { border-color: var(--accent-main); outline: none; }
         .pin-input { width: 100%; font-size: 36px; text-align: center; letter-spacing: 15px; margin-bottom: 20px; padding: 15px; border-radius: 8px; background: var(--input-bg); color: var(--accent-main); border: 1px solid var(--border-color); box-sizing: border-box; transition: 0.3s; }
         .pin-input:focus { border-color: var(--accent-main); outline: none; }
         button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
@@ -24,7 +24,7 @@
         button.btn-success { background: var(--accent-success); color: #FFF; font-weight: 800; }
         .btn-reset { background: transparent; color: var(--text-muted); border: none; font-size: 13px; margin-top: 15px; cursor: pointer; text-decoration: underline; width: auto; padding: 5px; }
         .btn-reset:hover { color: var(--text-main); }
-        .form-group { margin-bottom: 25px; text-align: left; }
+        .form-group { margin-bottom: 20px; text-align: left; }
         label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
     </style>
 </head>
@@ -38,16 +38,18 @@
         </div>
 
         <h1 style="color: var(--text-main); margin-top: 0; font-size: 24px;">SISTEMA GCF</h1>
-        <p style="color: var(--text-muted); margin-bottom: 25px;">Ingrese sus credenciales</p>
+        <p style="color: var(--text-muted); margin-bottom: 25px;">Seleccione su usuario e ingrese su PIN</p>
         
         <div class="form-group">
-            <label>Ingrese su DNI (8 dígitos):</label>
-            <input type="tel" id="dni_login_input" class="dni-input" maxlength="8" placeholder="--------" autofocus oninput="verificarDniIngresado()">
+            <label>Seleccionar Operador:</label>
+            <select id="select_usuario" class="select-user" onchange="cambiarUsuarioSeleccionado()">
+                <option value="">-- Cargando operadores --</option>
+            </select>
         </div>
 
         <div id="seccion_pin" style="display:none;">
             <p id="pin_message" style="color: var(--text-main); font-weight: 600; font-size: 15px; margin-bottom: 10px;">PIN:</p>
-            <input type="password" id="pin_input" class="pin-input" maxlength="4" placeholder="****" inputmode="numeric" onkeyup="checkEnter(event)">
+            <input type="password" id="pin_input" class="pin-input" maxlength="20" placeholder="****" inputmode="numeric" onkeyup="checkEnter(event)">
             <button id="btn_login" onclick="procesarLogin()">INICIAR SESIÓN</button>
             <button class="btn-reset" onclick="solicitarRestablecimientoPIN()">🔑 ¿Olvidaste tu PIN? Restablecer</button>
         </div>
@@ -57,49 +59,74 @@
         const SUPABASE_URL = "https://yopvikmrjnqcbkkubcbs.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_XQ5WAm8porUCSyP_q37sPQ_Ubxlr0Rl";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let listaUsuariosCache = [];
         let usuarioEnProceso = null;
 
-        async function verificarDniIngresado() {
-            const dni = document.getElementById('dni_login_input').value.trim();
+        window.onload = async () => {
+            await cargarOperadoresEnSelect();
+        };
+
+        async function cargarOperadoresEnSelect() {
+            const { data: usuarios, error } = await supabaseClient.from('usuarios').select('*').order('nombre', { ascending: true });
+            const select = document.getElementById('select_usuario');
+            
+            if (error || !usuarios) {
+                select.innerHTML = '<option value="">⚠️ Error al cargar usuarios</option>';
+                return;
+            }
+
+            listaUsuariosCache = usuarios;
+            select.innerHTML = '<option value="">-- Seleccione su nombre --</option>';
+            
+            usuarios.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.dni;
+                opt.innerText = `${u.nombre} (${u.rol || 'Operador'})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function cambiarUsuarioSeleccionado() {
+            const dniSeleccionado = document.getElementById('select_usuario').value;
             const seccionPin = document.getElementById('seccion_pin');
             const msg = document.getElementById('pin_message');
             const btn = document.getElementById('btn_login');
             const inputPin = document.getElementById('pin_input');
 
-            if (dni.length === 8) {
-                const { data: user } = await supabaseClient.from('usuarios').select('*').eq('dni', dni).single();
-                if (user) {
-                    usuarioEnProceso = user;
-                    seccionPin.style.display = 'block';
-                    inputPin.value = '';
-                    inputPin.focus();
-                    if (user.pin === null) {
-                        msg.innerText = `👋 Hola ${user.nombre.split(' ')[0]}, crea tu PIN de 4 dígitos:`;
-                        msg.style.color = "var(--accent-success)";
-                        inputPin.style.borderColor = "var(--accent-success)";
-                        btn.innerText = "GUARDAR MI PIN Y ENTRAR";
-                        btn.className = "btn-success";
-                    } else {
-                        msg.innerText = `Ingrese PIN para ${user.nombre}:`;
-                        msg.style.color = "var(--text-main)";
-                        inputPin.style.borderColor = "var(--border-color)";
-                        btn.innerText = "INICIAR SESIÓN";
-                        btn.className = "";
-                    }
-                } else {
-                    seccionPin.style.display = 'none';
-                    alert("⚠️ DNI no registrado.");
-                }
-            } else {
+            if (!dniSeleccionado) {
                 seccionPin.style.display = 'none';
+                usuarioEnProceso = null;
+                return;
+            }
+
+            usuarioEnProceso = listaUsuariosCache.find(u => u.dni === dniSeleccionado);
+            if (usuarioEnProceso) {
+                seccionPin.style.display = 'block';
+                inputPin.value = '';
+                inputPin.focus();
+
+                if (usuarioEnProceso.pin === null) {
+                    msg.innerText = `👋 Hola ${usuarioEnProceso.nombre.split(' ')[0]}, crea tu PIN de 4 dígitos:`;
+                    msg.style.color = "var(--accent-success)";
+                    inputPin.style.borderColor = "var(--accent-success)";
+                    btn.innerText = "GUARDAR MI PIN Y ENTRAR";
+                    btn.className = "btn-success";
+                } else {
+                    msg.innerText = `Ingrese PIN para ${usuarioEnProceso.nombre}:`;
+                    msg.style.color = "var(--text-main)";
+                    inputPin.style.borderColor = "var(--border-color)";
+                    btn.innerText = "INICIAR SESIÓN";
+                    btn.className = "";
+                }
             }
         }
 
         function checkEnter(e) { if (e.key === 'Enter') procesarLogin(); }
 
         async function procesarLogin() {
-            const pin = document.getElementById('pin_input').value;
-            if (pin.length !== 4) return alert("⚠️ El PIN debe tener 4 números o la clave maestra.");
+            const pin = document.getElementById('pin_input').value.trim();
+            if (!pin || pin.length < 4) return alert("⚠️ Ingrese su PIN de 4 dígitos.");
 
 
             const { data, error } = await supabaseClient.rpc('verificar_login', {
@@ -128,16 +155,20 @@
             const pinAdmin = prompt(`Restablecer PIN para: ${usuarioEnProceso.nombre}\n\nIngrese el PIN de Administrador para autorizar:`);
             if (pinAdmin === null) return;
 
-            // Verificación segura del PIN del admin vía Supabase o consulta controlada
-            const { data: admin } = await supabaseClient.from('usuarios').select('pin').eq('dni', '08131409').single();
-            if (admin && pinAdmin === admin.pin) {
-                await supabaseClient.from('usuarios').update({ pin: null }).eq('dni', usuarioEnProceso.dni);
-                usuarioEnProceso.pin = null;
-                alert(`✅ PIN restablecido para ${usuarioEnProceso.nombre}. Podrá crear uno nuevo.`);
-                verificarDniIngresado();
-            } else { 
-                alert("⚠️ PIN de Administrador incorrecto."); 
+
+            const { data, error } = await supabaseClient.rpc('restablecer_pin_usuario', {
+                p_dni_objetivo: usuarioEnProceso.dni,
+                p_pin_admin: pinAdmin
+            });
+
+            if (error || !data.success) {
+                alert("⚠️ " + (data?.message || "PIN de Administrador incorrecto."));
+                return;
             }
+
+            usuarioEnProceso.pin = null;
+            alert(`✅ PIN restablecido para ${usuarioEnProceso.nombre}. Podrá crear uno nuevo al iniciar sesión.`);
+            cambiarUsuarioSeleccionado();
         }
     </script>
 </body>
