@@ -67,7 +67,7 @@
         <div class="header">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
-                <h1>Sistema GCF - Panel Operativo V5.1</h1>
+                <h1>Sistema GCF - Panel Operativo V5.3</h1>
             </div>
             <div class="user-badge">
                 👤 <span id="current_user_name">Operador</span>
@@ -368,19 +368,26 @@
             const serial = document.getElementById('eg_serial').value.trim();
             const nombre = document.getElementById('eg_nombre').value.trim();
             const activarDni = document.getElementById('chk_activar_dni').checked;
-            const dni = document.getElementById('eg_dni').value.trim();
+            const dniReceptor = document.getElementById('eg_dni').value.trim();
 
             if(!serial || !nombre) return alert("⚠️ Complete la Serie y el Nombre del receptor.");
-            if(activarDni && dni.length !== 8) return alert("⚠️ El DNI debe tener 8 dígitos.");
+            if(activarDni && dniReceptor.length !== 8) return alert("⚠️ El DNI del receptor debe tener 8 dígitos.");
             
             const { data: caja } = await supabaseClient.from('cajas').select('*').eq('serial', serial).single();
             if(!caja) return alert("⚠️ La caja no existe.");
             if(caja.estado === 'DESPACHADO') return alert("⚠️ Ya figura como despachada.");
 
-            await supabaseClient.from('cajas').update({ estado: 'DESPACHADO', ubi: '-', receptor: nombre, operador: usuarioActual.nombre }).eq('serial', serial);
+            // Si la casilla está activa y se ingresó el DNI, se adjunta. De lo contrario, solo va el nombre limpio.
+            const receptorFinal = activarDni && dniReceptor ? `${nombre} (DNI: ${dniReceptor})` : nombre;
 
-            let infoDniText = activarDni ? ` (DNI: ${dni})` : '';
-            enviarTelegram(`🚨 ALERTA: Caja ${serial} despachada.\n\n👤 Receptor: ${nombre}${infoDniText}\n👨‍💻 Operador: ${usuarioActual.nombre}`);
+            await supabaseClient.from('cajas').update({ 
+                estado: 'DESPACHADO', 
+                ubi: '-', 
+                receptor: receptorFinal, 
+                operador: usuarioActual.nombre 
+            }).eq('serial', serial);
+
+            enviarTelegram(`🚨 ALERTA: Caja ${serial} despachada.\n\n👤 Receptor: ${receptorFinal}\n👨‍💻 Operador: ${usuarioActual.nombre}`);
 
             alert("✅ Despacho confirmado.");
             document.getElementById('eg_serial').value = ''; 
