@@ -67,7 +67,7 @@
         <div class="header">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
-                <h1>Sistema GCF - Panel Operativo V5.6</h1>
+                <h1>Sistema GCF - Panel Operativo V5.7</h1>
             </div>
             <div class="user-badge">
                 👤 <span id="current_user_name">Operador</span>
@@ -394,12 +394,16 @@
             if(caja.estado === 'DESPACHADO') return alert("⚠️ Ya figura como despachada.");
 
             const receptorFinal = activarDni && dniReceptor ? `${nombre} (DNI: ${dniReceptor})` : nombre;
+            
+            // Fecha y hora exacta del egreso actual
+            const fechaActual = new Date().toISOString();
 
             await supabaseClient.from('cajas').update({ 
                 estado: 'DESPACHADO', 
                 ubi: '-', 
                 receptor: receptorFinal, 
-                operador: usuarioActual.nombre 
+                operador: usuarioActual.nombre,
+                updated_at: fechaActual // <-- Guarda el momento exacto para el filtro de fechas
             }).eq('serial', serial);
 
             enviarTelegram(`🚨 ALERTA: Caja ${serial} despachada.\n\n👤 Receptor: ${receptorFinal}\n👨‍💻 Operador: ${usuarioActual.nombre}`);
@@ -441,17 +445,14 @@
             const fechaFiltro = document.getElementById('buscador_fecha').value; // Formato YYYY-MM-DD
 
             const filtrados = cacheInventario.filter(c => {
-                // Filtro 1: Código o Ubicación
                 const coincideGeneral = !textoGeneral || 
                     (c.serial || '').toLowerCase().includes(textoGeneral) || 
                     (c.ubi || '').toLowerCase().includes(textoGeneral) || 
                     (c.descrip || '').toLowerCase().includes(textoGeneral);
 
-                // Filtro 2: Receptor (ej: "Acosta")
                 const coincideReceptor = !textoReceptor || 
                     (c.receptor || '').toLowerCase().includes(textoReceptor);
 
-                // Filtro 3: Fecha (si Supabase almacena updated_at o created_at)
                 let coincideFecha = true;
                 if (fechaFiltro) {
                     const fechaCaja = c.updated_at ? c.updated_at.split('T')[0] : (c.created_at ? c.created_at.split('T')[0] : '');
