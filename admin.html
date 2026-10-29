@@ -132,12 +132,12 @@
 
 
         <div class="admin-card full-width" style="margin-bottom: 25px;">
-            <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión Múltiple (Máx. 6 por hoja)</h3>
+            <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión</h3>
             
             <div class="form-group">
                 <label>Método de Selección:</label>
                 <select id="metodo_impresion" onchange="cambiarMetodoImpresion()">
-                    <option value="rango">📊 Generar por Rango de Series (Ej: LAA-001 al LAA-020)</option>
+                    <option value="rango">📊 Generar por Rango de Series</option>
                     <option value="manual" selected>☑️ Selección Múltiple de Cajas Existentes (Checkboxes)</option>
                 </select>
             </div>
@@ -168,7 +168,7 @@
                 </div>
             </div>
 
-            <button class="btn-success" onclick="ejecutarImpresionLote()" style="padding: 16px; font-size: 16px;">🖨️ IMPRESIÓN RÁPIDA DE ETIQUETAS EN LOTE</button>
+            <button class="btn-success" onclick="ejecutarImpresionLote()" style="padding: 16px; font-size: 16px;">🖨️ IMPRESIÓN DE ETIQUETAS EN LOTE</button>
         </div>
 
         <div class="admin-grid">
@@ -531,7 +531,7 @@
 
             setTimeout(() => {
                 window.print();
-                alert(`✅ Se imprimieron ${seriales.length} etiquetas distribuidas en cuadrículas de hasta 6 por hoja.`);
+                alert(`✅ Se imprimieron ${seriales.length} etiquetas.`);
             }, 600);
         }
 
