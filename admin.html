@@ -26,8 +26,8 @@
         
         .form-group { margin-bottom: 20px; }
         label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
-        input[type="text"], input[type="tel"], select { width: 100%; padding: 14px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        input:focus, select:focus { border-color: var(--accent-main); outline: none; }
+        input[type="text"], input[type="tel"], select, textarea { width: 100%; padding: 14px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 15px; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent-main); outline: none; }
         button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
         button:hover { filter: brightness(1.1); }
         button.btn-danger { background: var(--accent-danger); color: white; }
@@ -82,23 +82,37 @@
             <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ ELIMINAR DATOS</button>
         </div>
 
+        <!-- SECCIÓN DE IMPRESIÓN MÚLTIPLE MODERNA -->
         <div class="admin-card full-width" style="margin-bottom: 25px;">
-            <h3 style="color: var(--accent-gold);">🖨️ Impresión Múltiple</h3>
-            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 250px;">
-                    <label style="font-size: 13px;">Método de selección:</label>
-                    <select id="metodo_impresion" onchange="cambiarMetodoImpresion()">
-                        <option value="rango">Generar por Rango de Series (Ej: LAA-001 al LAA-100)</option>
-                    </select>
+            <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión Múltiple</h3>
+            
+            <div class="form-group">
+                <label>Método de Selección:</label>
+                <select id="tipo_impresion_lote" onchange="cambiarMetodoImpresion()">
+                    <option value="rango">📊 Generar por Rango de Series (Ej: LAA-001 al LAA-020)</option>
+                    <option value="manual">✍️ Selección Múltiple / Lista Personalizada de Códigos</option>
+                </select>
+            </div>
+
+            <!-- Panel Rango -->
+            <div id="seccion_rango" class="input-group form-group" style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div>
+                    <label style="font-size: 13px;">Serie Inicial:</label>
+                    <input type="text" id="rango_inicio" placeholder="Ej: LAA-001">
+                </div>
+                <div>
+                    <label style="font-size: 13px;">Serie Final:</label>
+                    <input type="text" id="rango_fin" placeholder="Ej: LAA-020">
                 </div>
             </div>
-            <div id="panel_rango" style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
-                <div class="input-group" style="margin-bottom: 0;">
-                    <div><label style="font-size: 13px;">Serie Inicial:</label><input type="text" id="rango_inicio" placeholder="Ej: LAA-001"></div>
-                    <div><label style="font-size: 13px;">Serie Final:</label><input type="text" id="rango_fin" placeholder="Ej: LAA-020"></div>
-                </div>
+
+            <!-- Panel Manual / Múltiple -->
+            <div id="seccion_manual" class="form-group" style="display: none; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <label style="font-size: 13px;">Lista de Códigos (Separados por comas o saltos de línea):</label>
+                <textarea id="lote_lista_manual" rows="3" placeholder="Ej: LAA-001, LAA-005, LAA-012"></textarea>
             </div>
-            <button class="btn-success" onclick="ejecutarImpresionLote()" style="padding: 14px;">🖨️ IMPRIMIR ETIQUETAS EN LOTE</button>
+
+            <button class="btn-success" onclick="ejecutarImpresionLote()" style="padding: 16px; font-size: 16px;">🖨️ IMPRESIÓN RÁPIDA DE ETIQUETAS EN LOTE</button>
         </div>
 
         <div class="admin-grid">
@@ -248,6 +262,20 @@
             document.getElementById('lista_usuarios').innerHTML = htmlUsers;
         }
 
+        function cambiarMetodoImpresion() {
+            const metodo = document.getElementById('tipo_impresion_lote').value;
+            const secRango = document.getElementById('seccion_rango');
+            const secManual = document.getElementById('seccion_manual');
+
+            if (metodo === 'rango') {
+                secRango.style.display = 'grid';
+                secManual.style.display = 'none';
+            } else {
+                secRango.style.display = 'none';
+                secManual.style.display = 'block';
+            }
+        }
+
         async function agregarUbicacion() {
             const nueva = document.getElementById('nueva_ubi_nombre').value.trim();
             if (!nueva) return alert("Ingrese nombre de ubicación.");
@@ -361,32 +389,50 @@
         }
 
         function ejecutarImpresionLote() {
-            const inicioStr = document.getElementById('rango_inicio').value.trim().toUpperCase();
-            const finStr = document.getElementById('rango_fin').value.trim().toUpperCase();
-            if (!inicioStr || !finStr) return alert("⚠️ Ingrese serie inicial y final.");
-            
-            const p1 = inicioStr.split('-'), p2 = finStr.split('-');
-            if (p1.length !== 2 || p2.length !== 2) return alert("⚠️ Formato incorrecto. Use LAA-001");
-            
-            let numIni = parseInt(p1[1]), numFin = parseInt(p2[1]);
-            if (isNaN(numIni) || isNaN(numFin) || numIni > numFin) return alert("⚠️ Rango no válido.");
-
+            const metodo = document.getElementById('tipo_impresion_lote').value;
             let seriales = [];
-            for (let i = numIni; i <= numFin; i++) {
-                seriales.push(`${p1[0]}-${String(i).padStart(3, '0')}`);
+
+            if (metodo === 'rango') {
+                const inicioStr = document.getElementById('rango_inicio').value.trim().toUpperCase();
+                const finStr = document.getElementById('rango_fin').value.trim().toUpperCase();
+                if (!inicioStr || !finStr) return alert("⚠️ Ingrese serie inicial y final.");
+                
+                const p1 = inicioStr.split('-'), p2 = finStr.split('-');
+                if (p1.length !== 2 || p2.length !== 2) return alert("⚠️ Formato incorrecto. Use LAA-001");
+                
+                let numIni = parseInt(p1[1]), numFin = parseInt(p2[1]);
+                let padding = p1[1].length;
+                if (isNaN(numIni) || isNaN(numFin) || numIni > numFin) return alert("⚠️ Rango no válido.");
+
+                for (let i = numIni; i <= numFin; i++) {
+                    seriales.push(`${p1[0]}-${String(i).padStart(padding, '0')}`);
+                }
+            } else {
+                const textoManual = document.getElementById('lote_lista_manual').value.trim();
+                if (!textoManual) return alert("⚠️ Ingrese al menos un código de serie.");
+                seriales = textoManual.split(/[\n,]+/).map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
             }
+
+            if (seriales.length === 0) return alert("⚠️ No hay series válidas para imprimir.");
 
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = "";
-            seriales.forEach(s => {
-                printArea.innerHTML += `<div class="label-box"><div class="label-barcode"><svg class="print-barcode-svg" data-serial="${s}"></svg></div></div>`;
+            seriales.forEach((s, index) => {
+                printArea.innerHTML += `<div class="label-box"><div class="label-barcode"><svg class="print-barcode-svg" data-serial="${s}" id="barcode_lote_${index}"></svg></div></div>`;
             });
 
-            seriales.forEach(s => {
-                JsBarcode(`.print-barcode-svg[data-serial="${s}"]`, s, { format: "CODE128", lineColor: "#000000", width: 3, height: 180, displayValue: true, fontSize: 26, textMargin: 8 });
+            seriales.forEach((s, index) => {
+                try {
+                    JsBarcode(`#barcode_lote_${index}`, s, { format: "CODE128", lineColor: "#000000", width: 3, height: 180, displayValue: true, fontSize: 26, textMargin: 8 });
+                } catch (e) {
+                    console.error("Error generando código para: " + s, e);
+                }
             });
 
-            setTimeout(() => window.print(), 600);
+            setTimeout(() => {
+                window.print();
+                alert(`✅ Se enviaron ${seriales.length} etiquetas a la cola de impresión.`);
+            }, 600);
         }
 
         async function limpiarBaseDatos() {
