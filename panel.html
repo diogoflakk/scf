@@ -47,16 +47,6 @@
         .estado-despachado { color: var(--accent-danger); font-weight: 800; }
         .estado-almacen { color: var(--accent-success); font-weight: 800; }
         #print-area { display: none; }
-        @media print {
-            .app-container, body { background: white !important; }
-            .app-container { box-shadow: none; border: none; display: none !important; }
-            @page { size: 100mm 100mm; margin: 0; }
-            body { background: white !important; margin: 0 !important; padding: 0 !important; }
-            #print-area { display: block !important; width: 100mm; }
-            .label-box { width: 100mm; height: 100mm; box-sizing: border-box; display: flex !important; flex-direction: column; align-items: center; justify-content: center; background: white; page-break-after: always; break-after: page; margin: 0; }
-            .label-barcode { width: 100%; text-align: center; }
-            .print-barcode-svg { width: 90% !important; height: 180px !important; }
-        }
     </style>
 </head>
 <body>
@@ -88,12 +78,12 @@
                 <input type="text" id="in_serial" readonly style="background:var(--input-bg); color:var(--accent-main); border-color:var(--border-color); text-align:center; font-size:20px; letter-spacing:1px; font-weight:bold;">
             </div>
             <div class="form-group">
-                <label>DESCRIPCIÓN (OPCIONAL)</label>
+                <label>DESCRIPCIÓN</label>
                 <select id="in_desc_select" onchange="verificarOpcionOtroDesc(this.value)">
                     <option value="">-- Sin descripción --</option>
-                    <option value="35 frascos con formol">35 frascos con formol</option>
-                    <option value="16 frascos con formol">16 frascos con formol</option>
-                    <option value="otro">Otro (cantidad personalizada)...</option>
+                    <option value="35 frascos con formol">35 Frascos con formol</option>
+                    <option value="16 frascos con formol">16 Frascos con formol</option>
+                    <option value="otro">Otro...</option>
                 </select>
             </div>
             
@@ -102,7 +92,7 @@
                 <label>INGRESE CANTIDAD PERSONALIZADA</label>
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <input type="number" id="in_desc_custom" placeholder="Ej: 20" min="1" style="flex: 1;">
-                    <span style="font-weight: bold; color: var(--text-muted); font-size: 15px; white-space: nowrap;">frascos con formol</span>
+                    <span style="font-weight: bold; color: var(--text-muted); font-size: 15px; white-space: nowrap;">Frascos con formol</span>
                 </div>
             </div>
 
@@ -110,12 +100,7 @@
                 <div><label>Dimensión</label><select id="in_dim"></select></div>
                 <div><label>Ubicación Inicial</label><select id="in_ubi"></select></div>
             </div>
-            <div class="form-group" style="background: var(--header-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); margin: 0; font-size: 14px; text-transform: none;">
-                    <input type="checkbox" id="chk_imprimir_al_registrar" checked style="width: 18px; height: 18px; accent-color: var(--accent-main); cursor: pointer;">
-                    🖨️ Imprimir etiqueta automáticamente
-                </label>
-            </div>
+            
             <button onclick="procesarIngreso()">📥 REGISTRAR CAJA</button>
         </div>
 
@@ -202,8 +187,6 @@
             </div>
         </div>
     </div>
-
-    <div id="print-area"></div>
 
     <script>
         const SUPABASE_URL = "https://yopvikmrjnqcbkkubcbs.supabase.co";
@@ -375,7 +358,6 @@
             const serial = document.getElementById('in_serial').value.trim();
             const dim = document.getElementById('in_dim').value;
             const ubi = document.getElementById('in_ubi').value;
-            const imprimirAutomatico = document.getElementById('chk_imprimir_al_registrar').checked;
 
             const selectorDesc = document.getElementById('in_desc_select').value;
             let desc = '-';
@@ -395,13 +377,7 @@
 
             await supabaseClient.from('cajas').insert([{ serial, descrip: desc, dim, ubi, estado: 'EN ALMACEN', operador: usuarioActual.nombre, receptor: '-' }]);
 
-            if (imprimirAutomatico) {
-                const printArea = document.getElementById('print-area');
-                printArea.innerHTML = `<div class="label-box"><div class="label-barcode"><svg class="print-barcode-svg" data-serial="${serial}"></svg></div></div>`;
-                JsBarcode(".print-barcode-svg", serial, { format: "CODE128", lineColor: "#000000", width: 3, height: 180, displayValue: true, fontSize: 26, textMargin: 8 });
-                setTimeout(() => window.print(), 600);
-                alert("✅ Caja registrada e impresión enviada.");
-            } else { alert("✅ Caja registrada con éxito."); }
+            alert("✅ Caja registrada con éxito.");
 
             document.getElementById('in_desc_select').value = ''; 
             document.getElementById('in_desc_custom').value = '';
