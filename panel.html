@@ -31,7 +31,7 @@
         .tab-content.active { display: block; }
         .form-group { margin-bottom: 25px; }
         label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
-        input[type="text"], input[type="tel"], input[type="date"], select { width: 100%; padding: 16px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; font-weight: 500; }
+        input[type="text"], input[type="tel"], input[type="date"], input[type="number"], select { width: 100%; padding: 16px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; font-weight: 500; font-family: inherit; }
         input:focus, select:focus { border-color: var(--accent-main); outline: none; }
         button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
         button:hover { filter: brightness(1.1); }
@@ -82,16 +82,30 @@
             <div id="btn_tab_inventario" class="tab" onclick="switchTab('tab-inventario', this); cargarInventario()">📋 INVENTARIO</div>
         </div>
 
-
         <div id="tab-ingreso" class="tab-content active">
             <div class="form-group">
                 <label>N° DE SERIE (Generado Automáticamente)</label>
                 <input type="text" id="in_serial" readonly style="background:var(--input-bg); color:var(--accent-main); border-color:var(--border-color); text-align:center; font-size:20px; letter-spacing:1px; font-weight:bold;">
             </div>
             <div class="form-group">
-                <label>Descripción (Opcional)</label>
-                <input type="text" id="in_desc" placeholder="Ej: 35 frascos">
+                <label>DESCRIPCIÓN (OPCIONAL)</label>
+                <select id="in_desc_select" onchange="verificarOpcionOtroDesc(this.value)">
+                    <option value="">-- Sin descripción --</option>
+                    <option value="35 frascos con formol">35 frascos con formol</option>
+                    <option value="16 frascos con formol">16 frascos con formol</option>
+                    <option value="otro">Otro (cantidad personalizada)...</option>
+                </select>
             </div>
+            
+            <!-- Campo numérico dinámico para la opción "Otro" -->
+            <div class="form-group" id="contenedor_otro_desc" style="display: none;">
+                <label>INGRESE CANTIDAD PERSONALIZADA</label>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="number" id="in_desc_custom" placeholder="Ej: 20" min="1" style="flex: 1;">
+                    <span style="font-weight: bold; color: var(--text-muted); font-size: 15px; white-space: nowrap;">frascos con formol</span>
+                </div>
+            </div>
+
             <div class="input-group form-group">
                 <div><label>Dimensión</label><select id="in_dim"></select></div>
                 <div><label>Ubicación Inicial</label><select id="in_ubi"></select></div>
@@ -104,7 +118,6 @@
             </div>
             <button onclick="procesarIngreso()">📥 REGISTRAR CAJA</button>
         </div>
-
 
         <div id="tab-egreso" class="tab-content">
             <div class="form-group">
@@ -131,7 +144,6 @@
             <button class="btn-danger" onclick="procesarEgreso()">⚠️ CONFIRMAR SALIDA</button>
         </div>
 
-
         <div id="tab-traslado" class="tab-content">
             <div class="form-group">
                 <label>N° DE SERIE A REUBICAR</label>
@@ -147,18 +159,15 @@
             <button onclick="procesarTraslado()">🔄 ACTUALIZAR UBICACIÓN</button>
         </div>
 
-
         <div id="reader-container" style="display: none; margin-bottom: 25px; background: var(--header-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
             <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
             <button type="button" class="btn-danger" style="margin-top: 15px; padding: 10px;" onclick="cerrarEscanerCamara()">❌ Cancelar Escaneo</button>
         </div>
 
-
         <div id="tab-inventario" class="tab-content">
             <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
                 <h2 style="margin: 0; color: var(--text-main); font-size: 18px;">SEGUIMIENTO DEL INVENTARIO</h2>
                 
-
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <div>
                         <label style="font-size: 12px; margin-bottom: 5px;">🔍 Código o Ubicación</label>
@@ -237,6 +246,17 @@
                 window.location.href = 'login.html';
             }
         };
+
+        function verificarOpcionOtroDesc(valor) {
+            const contenedorOtro = document.getElementById('contenedor_otro_desc');
+            if (valor === 'otro') {
+                contenedorOtro.style.display = 'block';
+                document.getElementById('in_desc_custom').focus();
+            } else {
+                contenedorOtro.style.display = 'none';
+                document.getElementById('in_desc_custom').value = '';
+            }
+        }
 
         async function cargarCatalogosRemotos() {
             const { data: ubis } = await supabaseClient.from('ubicaciones').select('nombre');
@@ -353,10 +373,20 @@
 
         async function procesarIngreso() {
             const serial = document.getElementById('in_serial').value.trim();
-            const desc = document.getElementById('in_desc').value.trim() || '-';
             const dim = document.getElementById('in_dim').value;
             const ubi = document.getElementById('in_ubi').value;
             const imprimirAutomatico = document.getElementById('chk_imprimir_al_registrar').checked;
+
+            const selectorDesc = document.getElementById('in_desc_select').value;
+            let desc = '-';
+
+            if (selectorDesc === 'otro') {
+                const customCant = document.getElementById('in_desc_custom').value.trim();
+                if (!customCant) return alert("⚠️ Ingrese la cantidad personalizada para la descripción.");
+                desc = `${customCant} frascos con formol`;
+            } else if (selectorDesc !== '') {
+                desc = selectorDesc;
+            }
 
             if (!serial || !dim || !ubi) return alert("⚠️ Faltan datos obligatorios.");
 
@@ -373,7 +403,9 @@
                 alert("✅ Caja registrada e impresión enviada.");
             } else { alert("✅ Caja registrada con éxito."); }
 
-            document.getElementById('in_desc').value = ''; 
+            document.getElementById('in_desc_select').value = ''; 
+            document.getElementById('in_desc_custom').value = '';
+            document.getElementById('contenedor_otro_desc').style.display = 'none';
             document.getElementById('in_dim').value = '';
             document.getElementById('in_ubi').value = '';
             actualizarSiguienteSerie();
@@ -389,11 +421,9 @@
             if(!serial || !nombre) return alert("⚠️ Complete la Serie y el Nombre del receptor.");
             if(activarDni && dniReceptor.length !== 8) return alert("⚠️ El DNI del receptor debe tener 8 dígitos.");
             
-
             const { data: caja, error: errConsulta } = await supabaseClient.from('cajas').select('*').eq('serial', serial).single();
             if(errConsulta || !caja) return alert("⚠️ La caja no existe.");
             
-
             const estadoActual = (caja.estado || '').toUpperCase().trim();
             if(estadoActual === 'DESPACHADO') {
                 return alert("⚠️ Esta caja ya figura como DESPACHADA anteriormente.");
@@ -402,7 +432,6 @@
             const receptorFinal = activarDni && dniReceptor ? `${nombre} (DNI: ${dniReceptor})` : nombre;
             const fechaActual = new Date().toISOString();
 
-            // Ejecutamos la actualización explícita en Supabase
             const { error: errUpdate } = await supabaseClient.from('cajas').update({ 
                 estado: 'DESPACHADO', 
                 ubi: '-', 
@@ -426,7 +455,6 @@
             document.getElementById('contenedor_dni_receptor').style.display = 'none';
             document.getElementById('eg_serial').focus();
             
-
             cargarInventario();
         }
 
