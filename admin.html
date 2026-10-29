@@ -54,38 +54,48 @@
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                width: 100mm !important;
+                width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
 
             @page {
-                size: 100mm 100mm;
-                margin: 0;
+                size: A4 portrait;
+                margin: 10mm;
             }
 
             html, body {
                 background: white !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100mm !important;
-                height: 100mm !important;
+                width: 100% !important;
+            }
+
+
+            .print-page {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                grid-template-rows: repeat(2, 1fr) !important;
+                gap: 20px !important;
+                width: 100% !important;
+                height: 277mm !important; 
+                box-sizing: border-box !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+                align-items: center !important;
+                justify-items: center !important;
+                margin: 0 !important;
+                padding: 10mm !important;
             }
 
             .label-box {
-                width: 100mm !important;
-                height: 100mm !important;
-                box-sizing: border-box !important;
+                width: 100% !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
                 justify-content: center !important;
                 background: white !important;
-                page-break-after: always !important;
-                break-after: page !important;
-                page-break-inside: avoid !important;
-                margin: 0 !important;
-                padding: 0 !important;
             }
 
             .label-barcode {
@@ -94,8 +104,8 @@
             }
 
             .print-barcode-svg {
-                width: 90% !important;
-                height: 180px !important;
+                width: 100% !important;
+                height: 120px !important;
             }
         }
     </style>
@@ -120,9 +130,9 @@
             <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ ELIMINAR DATOS</button>
         </div>
 
-        <!-- SECCIÓN DE IMPRESIÓN MÚLTIPLE -->
+
         <div class="admin-card full-width" style="margin-bottom: 25px;">
-            <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión Múltiple</h3>
+            <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión Múltiple (Máx. 6 por hoja)</h3>
             
             <div class="form-group">
                 <label>Método de Selección:</label>
@@ -132,7 +142,7 @@
                 </select>
             </div>
 
-            <!-- Panel Rango -->
+
             <div id="seccion_rango" class="input-group form-group" style="display: none; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div>
                     <label style="font-size: 13px;">Serie Inicial:</label>
@@ -235,7 +245,6 @@
                 document.getElementById('current_user_name').innerText = usuarioActual.nombre;
                 await cargarPanelAdmin();
                 await cargarCajasParaSeleccion();
-                // Inicializar estado visual del selector
                 cambiarMetodoImpresion();
             } else {
                 window.location.href = 'login.html';
@@ -488,13 +497,33 @@
 
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = "";
-            seriales.forEach((s, index) => {
-                printArea.innerHTML += `<div class="label-box"><div class="label-barcode"><svg class="print-barcode-svg" data-serial="${s}" id="barcode_lote_${index}"></svg></div></div>`;
-            });
+
+
+            let paginasHtml = "";
+            for (let i = 0; i < seriales.length; i += 6) {
+                let chunk = seriales.slice(i, i + 6);
+                let labelsInPage = "";
+
+                chunk.forEach((s, idxGlobal) => {
+                    let realIndex = i + idxGlobal;
+                    labelsInPage += `
+                        <div class="label-box">
+                            <div class="label-barcode">
+                                <svg class="print-barcode-svg" data-serial="${s}" id="barcode_lote_${realIndex}"></svg>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                paginasHtml += `<div class="print-page">${labelsInPage}</div>`;
+            }
+
+            printArea.innerHTML = paginasHtml;
+
 
             seriales.forEach((s, index) => {
                 try {
-                    JsBarcode(`#barcode_lote_${index}`, s, { format: "CODE128", lineColor: "#000000", width: 3, height: 180, displayValue: true, fontSize: 26, textMargin: 8 });
+                    JsBarcode(`#barcode_lote_${index}`, s, { format: "CODE128", lineColor: "#000000", width: 2.5, height: 100, displayValue: true, fontSize: 22, textMargin: 6 });
                 } catch (e) {
                     console.error("Error generando código para: " + s, e);
                 }
@@ -502,7 +531,7 @@
 
             setTimeout(() => {
                 window.print();
-                alert(`✅ Se enviaron ${seriales.length} etiquetas a la cola de impresión.`);
+                alert(`✅ Se imprimieron ${seriales.length} etiquetas distribuidas en cuadrículas de hasta 6 por hoja.`);
             }, 600);
         }
 
