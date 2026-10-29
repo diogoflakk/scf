@@ -26,8 +26,8 @@
         
         .form-group { margin-bottom: 20px; }
         label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
-        input[type="text"], input[type="tel"], select, textarea { width: 100%; padding: 14px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 15px; font-family: inherit; }
-        input:focus, select:focus, textarea:focus { border-color: var(--accent-main); outline: none; }
+        input[type="text"], input[type="tel"], select { width: 100%; padding: 14px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 15px; font-family: inherit; }
+        input:focus, select:focus { border-color: var(--accent-main); outline: none; }
         button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
         button:hover { filter: brightness(1.1); }
         button.btn-danger { background: var(--accent-danger); color: white; }
@@ -82,7 +82,7 @@
             <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ ELIMINAR DATOS</button>
         </div>
 
-        <!-- SECCIÓN DE IMPRESIÓN MÚLTIPLE MODERNA -->
+        <!-- SECCIÓN DE IMPRESIÓN MÚLTIPLE CON SELECCIÓN VISUAL -->
         <div class="admin-card full-width" style="margin-bottom: 25px;">
             <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión Múltiple</h3>
             
@@ -90,7 +90,7 @@
                 <label>Método de Selección:</label>
                 <select id="tipo_impresion_lote" onchange="cambiarMetodoImpresion()">
                     <option value="rango">📊 Generar por Rango de Series (Ej: LAA-001 al LAA-020)</option>
-                    <option value="manual">✍️ Selección Múltiple / Lista Personalizada de Códigos</option>
+                    <option value="manual">☑️ Selección Múltiple de Cajas Existentes (Checkboxes)</option>
                 </select>
             </div>
 
@@ -106,10 +106,18 @@
                 </div>
             </div>
 
-            <!-- Panel Manual / Múltiple -->
+            <!-- Panel Selección Múltiple con Checkboxes -->
             <div id="seccion_manual" class="form-group" style="display: none; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <label style="font-size: 13px;">Lista de Códigos (Separados por comas o saltos de línea):</label>
-                <textarea id="lote_lista_manual" rows="3" placeholder="Ej: LAA-001, LAA-005, LAA-012"></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 13px; margin: 0;">Seleccione las cajas a imprimir:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn-warning" style="padding: 4px 10px; font-size: 11px; width: auto;" onclick="seleccionarTodasCajas(true)">Marcar Todas</button>
+                        <button type="button" class="btn-danger" style="padding: 4px 10px; font-size: 11px; width: auto;" onclick="seleccionarTodasCajas(false)">Desmarcar</button>
+                    </div>
+                </div>
+                <div id="contenedor_lista_cajas" style="max-height: 220px; overflow-y: auto; background: var(--bg-surface); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                    <span style="color: var(--text-muted); font-size: 13px;">Cargando cajas disponibles...</span>
+                </div>
             </div>
 
             <button class="btn-success" onclick="ejecutarImpresionLote()" style="padding: 16px; font-size: 16px;">🖨️ IMPRESIÓN RÁPIDA DE ETIQUETAS EN LOTE</button>
@@ -188,6 +196,7 @@
                 }
                 document.getElementById('current_user_name').innerText = usuarioActual.nombre;
                 await cargarPanelAdmin();
+                await cargarCajasParaSeleccion();
             } else {
                 window.location.href = 'login.html';
             }
@@ -262,6 +271,28 @@
             document.getElementById('lista_usuarios').innerHTML = htmlUsers;
         }
 
+        async function cargarCajasParaSeleccion() {
+            const { data: cajas } = await supabaseClient.from('cajas').select('serial, estado').order('serial', { ascending: false });
+            const contenedor = document.getElementById('contenedor_lista_cajas');
+            
+            if (!cajas || cajas.length === 0) {
+                contenedor.innerHTML = `<span style="color: var(--text-muted); font-size: 13px;">No hay cajas registradas.</span>`;
+                return;
+            }
+
+            contenedor.innerHTML = cajas.map(c => `
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; background: var(--bg-surface); padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); margin: 0;">
+                    <input type="checkbox" class="chk_caja_lote" value="${c.serial}" style="width: 16px; height: 16px; accent-color: var(--accent-main); cursor: pointer;">
+                    <span style="font-weight: bold; color: var(--accent-main);">${c.serial}</span>
+                    <small style="color: var(--text-muted); font-size: 11px; margin-left: auto;">${c.estado || 'ALMACÉN'}</small>
+                </label>
+            `).join('');
+        }
+
+        function seleccionarTodasCajas(marcar) {
+            document.querySelectorAll('.chk_caja_lote').forEach(chk => chk.checked = marcar);
+        }
+
         function cambiarMetodoImpresion() {
             const metodo = document.getElementById('tipo_impresion_lote').value;
             const secRango = document.getElementById('seccion_rango');
@@ -273,6 +304,7 @@
             } else {
                 secRango.style.display = 'none';
                 secManual.style.display = 'block';
+                cargarCajasParaSeleccion(); // Refresca la lista al abrir
             }
         }
 
@@ -408,12 +440,12 @@
                     seriales.push(`${p1[0]}-${String(i).padStart(padding, '0')}`);
                 }
             } else {
-                const textoManual = document.getElementById('lote_lista_manual').value.trim();
-                if (!textoManual) return alert("⚠️ Ingrese al menos un código de serie.");
-                seriales = textoManual.split(/[\n,]+/).map(s => s.trim().toUpperCase()).filter(s => s.length > 0);
+                // Captura todas las cajas marcadas con checkboxes
+                const checksSeleccionados = document.querySelectorAll('.chk_caja_lote:checked');
+                seriales = Array.from(checksSeleccionados).map(chk => chk.value);
             }
 
-            if (seriales.length === 0) return alert("⚠️ No hay series válidas para imprimir.");
+            if (seriales.length === 0) return alert("⚠️ Seleccione o marque al menos una caja para imprimir.");
 
             const printArea = document.getElementById('print-area');
             printArea.innerHTML = "";
@@ -439,6 +471,7 @@
             if(confirm("⚠️ PELIGRO: ¿Borrar TODAS las cajas de la nube?")) {
                 await supabaseClient.from('cajas').delete().neq('serial', ''); 
                 alert("✅ Base de datos limpiada.");
+                cargarCajasParaSeleccion();
             }
         }
     </script>
