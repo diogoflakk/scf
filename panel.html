@@ -158,7 +158,7 @@
             <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
                 <h2 style="margin: 0; color: var(--text-main); font-size: 18px;">SEGUIMIENTO DEL INVENTARIO</h2>
                 
-                <!-- NUEVOS FILTROS AVANZADOS -->
+                <!-- FILTROS AVANZADOS -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <div>
                         <label style="font-size: 12px; margin-bottom: 5px;">🔍 Código o Ubicación</label>
@@ -394,8 +394,6 @@
             if(caja.estado === 'DESPACHADO') return alert("⚠️ Ya figura como despachada.");
 
             const receptorFinal = activarDni && dniReceptor ? `${nombre} (DNI: ${dniReceptor})` : nombre;
-            
-            // Fecha y hora exacta del egreso actual
             const fechaActual = new Date().toISOString();
 
             await supabaseClient.from('cajas').update({ 
@@ -403,7 +401,7 @@
                 ubi: '-', 
                 receptor: receptorFinal, 
                 operador: usuarioActual.nombre,
-                updated_at: fechaActual // <-- Guarda el momento exacto para el filtro de fechas
+                updated_at: fechaActual 
             }).eq('serial', serial);
 
             enviarTelegram(`🚨 ALERTA: Caja ${serial} despachada.\n\n👤 Receptor: ${receptorFinal}\n👨‍💻 Operador: ${usuarioActual.nombre}`);
@@ -434,9 +432,10 @@
         }
 
         async function cargarInventario() {
+            // Traemos todo el inventario para poder buscar entre lo despachado si se filtra por fecha o receptor
             const { data: cajas } = await supabaseClient.from('cajas').select('*').order('serial', { ascending: false });
             cacheInventario = cajas || [];
-            renderizarTablaInventario(cacheInventario);
+            filtrarInventario(); // Se renderiza aplicando el filtro por defecto (ocultando despachados a menos que se busque)
         }
 
         function filtrarInventario() {
@@ -444,7 +443,17 @@
             const textoReceptor = document.getElementById('buscador_receptor').value.toLowerCase().trim();
             const fechaFiltro = document.getElementById('buscador_fecha').value; // Formato YYYY-MM-DD
 
+            // Verificamos si el usuario está realizando una búsqueda activa por receptor o por fecha
+            const buscandoActivamente = textoReceptor !== "" || fechaFiltro !== "";
+
             const filtrados = cacheInventario.filter(c => {
+                const esDespachado = c.estado === 'DESPACHADO';
+
+                // Si NO está buscando activamente por receptor o fecha, ocultamos los despachados por defecto
+                if (!buscandoActivamente && esDespachado) {
+                    return false;
+                }
+
                 const coincideGeneral = !textoGeneral || 
                     (c.serial || '').toLowerCase().includes(textoGeneral) || 
                     (c.ubi || '').toLowerCase().includes(textoGeneral) || 
@@ -470,7 +479,7 @@
             tbody.innerHTML = '';
 
             if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No se encontraron registros con esos criterios.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No se encontraron registros activos en almacén (Usa los filtros de receptor o fecha para ver el historial despachado).</td></tr>`;
                 return;
             }
 
@@ -480,7 +489,7 @@
                 const claseEstado = esDespachado ? 'estado-despachado' : 'estado-almacen';
 
                 let fechaTexto = '';
-                if (c.updated_at) {
+                if (c.updated_at && esDespachado) {
                     const d = new Date(c.updated_at);
                     fechaTexto = `<br><small style="color: var(--text-muted);">🕒 ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>`;
                 }
