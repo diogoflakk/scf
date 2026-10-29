@@ -48,21 +48,68 @@
         .checkbox-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
         .checkbox-group label { font-size: 14px; text-transform: none; color: var(--text-main); display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; }
         .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-main); cursor: pointer; }
+        
         #print-area { display: none; }
+
         @media print {
-            .app-container, body { background: white !important; }
-            .app-container { box-shadow: none; border: none; }
-            @page { size: 100mm 100mm; margin: 0; }
-            body { background: white !important; margin: 0 !important; padding: 0 !important; }
-            #print-area { display: block !important; width: 100mm; }
-            .label-box { width: 100mm; height: 100mm; box-sizing: border-box; display: flex !important; flex-direction: column; align-items: center; justify-content: center; background: white; page-break-after: always; break-after: page; margin: 0; }
-            .label-barcode { width: 100%; text-align: center; }
-            .print-barcode-svg { width: 90% !important; height: 180px !important; }
+
+            body * {
+                visibility: hidden !important;
+            }
+            
+
+            #print-area, #print-area * {
+                visibility: visible !important;
+            }
+
+
+            #print-area {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100mm;
+            }
+
+            @page {
+                size: 100mm 100mm;
+                margin: 0;
+            }
+
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .label-box {
+                width: 100mm;
+                height: 100mm;
+                box-sizing: border-box;
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: white;
+                page-break-after: always;
+                break-after: page;
+                margin: 0;
+            }
+
+            .label-barcode {
+                width: 100%;
+                text-align: center;
+            }
+
+            .print-barcode-svg {
+                width: 90% !important;
+                height: 180px !important;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- BOTÓN FLOTANTE CIRCULAR EN LA ESQUINA INFERIOR DERECHA -->
+
     <button class="theme-float-btn" onclick="alternarTema()" title="Cambiar Tema">🌓</button>
 
     <div class="app-container">
@@ -82,7 +129,7 @@
             <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ ELIMINAR DATOS</button>
         </div>
 
-        <!-- SECCIÓN DE IMPRESIÓN MÚLTIPLE CON SELECCIÓN VISUAL -->
+
         <div class="admin-card full-width" style="margin-bottom: 25px;">
             <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión Múltiple</h3>
             
@@ -209,271 +256,3 @@
 
         async function cargarPanelAdmin() {
             const { data: ubis } = await supabaseClient.from('ubicaciones').select('nombre');
-            const { data: dims } = await supabaseClient.from('dimensiones').select('nombre');
-            window.ubicacionesDB = ubis ? ubis.map(u => u.nombre) : [];
-            window.dimensionesDB = dims ? dims.map(d => d.nombre) : [];
-
-            document.getElementById('lista_ubicaciones').innerHTML = (window.ubicacionesDB || []).map(u => `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
-                    <span>📍 ${u}</span>
-                    <button class="btn-danger" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="eliminarUbicacion('${u}')">Eliminar</button>
-                </div>
-            `).join('');
-
-            document.getElementById('lista_dimensiones').innerHTML = (window.dimensionesDB || []).map(d => `
-                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
-                    <span>📦 ${d}</span>
-                    <button class="btn-danger" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="eliminarDimension('${d}')">Eliminar</button>
-                </div>
-            `).join('');
-
-            const { data: usuarios } = await supabaseClient.from('usuarios').select('*');
-            let htmlUsers = "<table><tr><th>DNI</th><th>Nombre</th><th>Rol</th><th>Funciones</th><th style='text-align: center;'>Acciones</th></tr>";
-            
-            (usuarios || []).forEach(u => {
-                let descPermisos = (u.permisos || []).map(p => {
-                    if(p === 'tab_ingreso') return '📥 Ingresos';
-                    if(p === 'tab_egreso') return '📤 Retiros';
-                    if(p === 'tab_traslado') return '🔄 Traslados';
-                    if(p === 'tab_inventario') return '📋 Inventario';
-                    if(p === 'tab_admin') return '⚙️ Admin';
-                    return p;
-                }).join(', ');
-
-                let acciones = "";
-                if (u.dni === '08131409') {
-                    acciones = `
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                            <button class="btn-warning" style="padding: 8px 14px; font-size: 12px; font-weight: bold; width: auto;" onclick="cargarEdicionUsuarioAdminPrincipal('${u.dni}')">🔒 MODIFICAR ADMIN</button>
-                            <span style="color: var(--accent-gold); font-weight: bold; font-size: 13px;">Principal</span>
-                        </div>
-                    `;
-                } else {
-                    acciones = `
-                        <div style="display: flex; gap: 8px; justify-content: center;">
-                            <button class="btn-warning" style="padding: 8px 12px; font-size: 12px; width: auto; font-weight: bold;" onclick="cargarEdicionUsuario('${u.dni}')">MODIFICAR</button>
-                            <button class="btn-danger" style="padding: 8px 12px; font-size: 12px; width: auto; font-weight: bold;" onclick="eliminarUsuario('${u.dni}')">ELIMINAR</button>
-                        </div>
-                    `;
-                }
-
-                htmlUsers += `
-                    <tr>
-                        <td>${u.dni}</td>
-                        <td>${u.nombre}</td>
-                        <td><b>${u.rol}</b></td>
-                        <td style="font-size: 13px; color: var(--text-main);">${descPermisos}</td>
-                        <td style="text-align: center;">${acciones}</td>
-                    </tr>
-                `;
-            });
-            htmlUsers += "</table>";
-            document.getElementById('lista_usuarios').innerHTML = htmlUsers;
-        }
-
-        async function cargarCajasParaSeleccion() {
-            const { data: cajas } = await supabaseClient.from('cajas').select('serial, estado').order('serial', { ascending: false });
-            const contenedor = document.getElementById('contenedor_lista_cajas');
-            
-            if (!cajas || cajas.length === 0) {
-                contenedor.innerHTML = `<span style="color: var(--text-muted); font-size: 13px;">No hay cajas registradas.</span>`;
-                return;
-            }
-
-            contenedor.innerHTML = cajas.map(c => `
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; background: var(--bg-surface); padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); margin: 0;">
-                    <input type="checkbox" class="chk_caja_lote" value="${c.serial}" style="width: 16px; height: 16px; accent-color: var(--accent-main); cursor: pointer;">
-                    <span style="font-weight: bold; color: var(--accent-main);">${c.serial}</span>
-                    <small style="color: var(--text-muted); font-size: 11px; margin-left: auto;">${c.estado || 'ALMACÉN'}</small>
-                </label>
-            `).join('');
-        }
-
-        function seleccionarTodasCajas(marcar) {
-            document.querySelectorAll('.chk_caja_lote').forEach(chk => chk.checked = marcar);
-        }
-
-        function cambiarMetodoImpresion() {
-            const metodo = document.getElementById('tipo_impresion_lote').value;
-            const secRango = document.getElementById('seccion_rango');
-            const secManual = document.getElementById('seccion_manual');
-
-            if (metodo === 'rango') {
-                secRango.style.display = 'grid';
-                secManual.style.display = 'none';
-            } else {
-                secRango.style.display = 'none';
-                secManual.style.display = 'block';
-                cargarCajasParaSeleccion(); // Refresca la lista al abrir
-            }
-        }
-
-        async function agregarUbicacion() {
-            const nueva = document.getElementById('nueva_ubi_nombre').value.trim();
-            if (!nueva) return alert("Ingrese nombre de ubicación.");
-            await supabaseClient.from('ubicaciones').insert([{ nombre: nueva }]);
-            document.getElementById('nueva_ubi_nombre').value = '';
-            cargarPanelAdmin();
-            alert("✅ Ubicación agregada.");
-        }
-
-        async function eliminarUbicacion(ubi) {
-            if (window.ubicacionesDB.length <= 1) return alert("Debe mantener al menos una ubicación.");
-            if (confirm(`¿Eliminar ubicación "${ubi}"?`)) {
-                await supabaseClient.from('ubicaciones').delete().eq('nombre', ubi);
-                cargarPanelAdmin();
-            }
-        }
-
-        async function agregarDimension() {
-            const nueva = document.getElementById('nueva_dim_nombre').value.trim();
-            if (!nueva) return alert("Ingrese dimensión.");
-            await supabaseClient.from('dimensiones').insert([{ nombre: nueva }]);
-            document.getElementById('nueva_dim_nombre').value = '';
-            cargarPanelAdmin();
-            alert("✅ Dimensión agregada.");
-        }
-
-        async function eliminarDimension(dim) {
-            if (window.dimensionesDB.length <= 1) return alert("Debe mantener al menos una dimensión.");
-            if (confirm(`¿Eliminar dimensión "${dim}"?`)) {
-                await supabaseClient.from('dimensiones').delete().eq('nombre', dim);
-                cargarPanelAdmin();
-            }
-        }
-
-        async function cargarEdicionUsuarioAdminPrincipal(dni) {
-            const pass = prompt("🔒 PERFIL PROTEGIDO\n\nIngrese contraseña secreta de Administrador:");
-            if (pass === PASSWORD_MAESTRA_ADMIN) { await cargarEdicionUsuario(dni); alert("🔓 Desbloqueado."); }
-            else if (pass !== null) { alert("⚠️ Contraseña incorrecta."); }
-        }
-
-        async function guardarUsuarioAdmin() {
-            const dniInput = document.getElementById('reg_dni').value.trim();
-            const nombre = document.getElementById('reg_nombre').value.trim();
-            const rol = document.getElementById('reg_rol').value.trim() || 'Operador';
-            if (dniInput.length !== 8 || !nombre) return alert("Complete DNI de 8 dígitos y nombre.");
-
-            let permisosSeleccionados = [];
-            if (document.getElementById('perm_ingreso').checked) permisosSeleccionados.push('tab_ingreso');
-            if (document.getElementById('perm_egreso').checked) permisosSeleccionados.push('tab_egreso');
-            if (document.getElementById('perm_traslado').checked) permisosSeleccionados.push('tab_traslado');
-            if (document.getElementById('perm_inventario').checked) permisosSeleccionados.push('tab_inventario');
-            if (document.getElementById('perm_admin').checked) permisosSeleccionados.push('tab_admin');
-
-            if (dniInput === '08131409' || dniEditandoOriginal === '08131409') {
-                if (prompt("🔒 Ingrese la contraseña secreta para confirmar:") !== PASSWORD_MAESTRA_ADMIN) return alert("⚠️ Contraseña incorrecta.");
-            }
-
-            if (dniEditandoOriginal && dniEditandoOriginal !== dniInput) {
-                await supabaseClient.from('usuarios').delete().eq('dni', dniEditandoOriginal);
-                await supabaseClient.from('usuarios').insert([{ dni: dniInput, nombre, rol, pin: null, permisos: permisosSeleccionados }]);
-            } else {
-                const { data: existe } = await supabaseClient.from('usuarios').select('dni').eq('dni', dniInput).single();
-                if (existe) {
-                    await supabaseClient.from('usuarios').update({ nombre, rol, permisos: permisosSeleccionados }).eq('dni', dniInput);
-                } else {
-                    await supabaseClient.from('usuarios').insert([{ dni: dniInput, nombre, rol, pin: null, permisos: permisosSeleccionados }]);
-                }
-            }
-            cancelarEdicionUsuario();
-            cargarPanelAdmin();
-            alert("✅ Usuario guardado con éxito.");
-        }
-
-        async function cargarEdicionUsuario(dni) {
-            const { data: u } = await supabaseClient.from('usuarios').select('*').eq('dni', dni).single();
-            if (!u) return;
-            dniEditandoOriginal = dni;
-            document.getElementById('reg_dni').value = u.dni;
-            document.getElementById('reg_nombre').value = u.nombre;
-            document.getElementById('reg_rol').value = u.rol;
-            document.getElementById('perm_ingreso').checked = (u.permisos || []).includes('tab_ingreso');
-            document.getElementById('perm_egreso').checked = (u.permisos || []).includes('tab_egreso');
-            document.getElementById('perm_traslado').checked = (u.permisos || []).includes('tab_traslado');
-            document.getElementById('perm_inventario').checked = (u.permisos || []).includes('tab_inventario');
-            document.getElementById('perm_admin').checked = (u.permisos || []).includes('tab_admin');
-            document.getElementById('lbl_modo_usuario').innerText = "✏️ Modificando Operador (DNI: " + dni + ")";
-            document.getElementById('btn_cancelar_edicion').style.display = 'block';
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
-        function cancelarEdicionUsuario() {
-            dniEditandoOriginal = null;
-            document.getElementById('reg_dni').value = '';
-            document.getElementById('reg_nombre').value = '';
-            document.getElementById('reg_rol').value = '';
-            document.getElementById('perm_ingreso').checked = false;
-            document.getElementById('perm_egreso').checked = false;
-            document.getElementById('perm_traslado').checked = false;
-            document.getElementById('perm_inventario').checked = true;
-            document.getElementById('perm_admin').checked = false;
-            document.getElementById('lbl_modo_usuario').innerText = "👥 Gestión de Operadores, DNI y Roles";
-            document.getElementById('btn_cancelar_edicion').style.display = 'none';
-        }
-
-        async function eliminarUsuario(dni) {
-            if (dni === '08131409') return alert("No se puede eliminar al admin principal.");
-            if (confirm(`¿Eliminar usuario ${dni}?`)) {
-                await supabaseClient.from('usuarios').delete().eq('dni', dni);
-                cargarPanelAdmin();
-            }
-        }
-
-        function ejecutarImpresionLote() {
-            const metodo = document.getElementById('tipo_impresion_lote').value;
-            let seriales = [];
-
-            if (metodo === 'rango') {
-                const inicioStr = document.getElementById('rango_inicio').value.trim().toUpperCase();
-                const finStr = document.getElementById('rango_fin').value.trim().toUpperCase();
-                if (!inicioStr || !finStr) return alert("⚠️ Ingrese serie inicial y final.");
-                
-                const p1 = inicioStr.split('-'), p2 = finStr.split('-');
-                if (p1.length !== 2 || p2.length !== 2) return alert("⚠️ Formato incorrecto. Use LAA-001");
-                
-                let numIni = parseInt(p1[1]), numFin = parseInt(p2[1]);
-                let padding = p1[1].length;
-                if (isNaN(numIni) || isNaN(numFin) || numIni > numFin) return alert("⚠️ Rango no válido.");
-
-                for (let i = numIni; i <= numFin; i++) {
-                    seriales.push(`${p1[0]}-${String(i).padStart(padding, '0')}`);
-                }
-            } else {
-                // Captura todas las cajas marcadas con checkboxes
-                const checksSeleccionados = document.querySelectorAll('.chk_caja_lote:checked');
-                seriales = Array.from(checksSeleccionados).map(chk => chk.value);
-            }
-
-            if (seriales.length === 0) return alert("⚠️ Seleccione o marque al menos una caja para imprimir.");
-
-            const printArea = document.getElementById('print-area');
-            printArea.innerHTML = "";
-            seriales.forEach((s, index) => {
-                printArea.innerHTML += `<div class="label-box"><div class="label-barcode"><svg class="print-barcode-svg" data-serial="${s}" id="barcode_lote_${index}"></svg></div></div>`;
-            });
-
-            seriales.forEach((s, index) => {
-                try {
-                    JsBarcode(`#barcode_lote_${index}`, s, { format: "CODE128", lineColor: "#000000", width: 3, height: 180, displayValue: true, fontSize: 26, textMargin: 8 });
-                } catch (e) {
-                    console.error("Error generando código para: " + s, e);
-                }
-            });
-
-            setTimeout(() => {
-                window.print();
-                alert(`✅ Se enviaron ${seriales.length} etiquetas a la cola de impresión.`);
-            }, 600);
-        }
-
-        async function limpiarBaseDatos() {
-            if(confirm("⚠️ PELIGRO: ¿Borrar TODAS las cajas de la nube?")) {
-                await supabaseClient.from('cajas').delete().neq('serial', ''); 
-                alert("✅ Base de datos limpiada.");
-                cargarCajasParaSeleccion();
-            }
-        }
-    </script>
-</body>
-</html>
