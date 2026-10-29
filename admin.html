@@ -47,14 +47,56 @@
         #print-area { display: none; }
 
         @media print {
-            body * { visibility: hidden !important; }
-            #print-area, #print-area * { visibility: visible !important; }
-            #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100mm; }
-            @page { size: 100mm 100mm; margin: 0; }
-            body { background: white !important; margin: 0 !important; padding: 0 !important; }
-            .label-box { width: 100mm; height: 100mm; box-sizing: border-box; display: flex !important; flex-direction: column; align-items: center; justify-content: center; background: white; page-break-after: always; break-after: page; margin: 0; }
-            .label-barcode { width: 100%; text-align: center; }
-            .print-barcode-svg { width: 90% !important; height: 180px !important; }
+            body * { visibility: hidden !important; display: none !important; }
+            #print-area, #print-area * { visibility: visible !important; display: block !important; }
+            
+            #print-area {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            @page {
+                size: 100mm 100mm;
+                margin: 0;
+            }
+
+            html, body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100mm !important;
+                height: 100mm !important;
+            }
+
+            .label-box {
+                width: 100mm !important;
+                height: 100mm !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background: white !important;
+                page-break-after: always !important;
+                break-after: page !important;
+                page-break-inside: avoid !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .label-barcode {
+                width: 100% !important;
+                text-align: center !important;
+            }
+
+            .print-barcode-svg {
+                width: 90% !important;
+                height: 180px !important;
+            }
         }
     </style>
 </head>
@@ -78,7 +120,7 @@
             <button class="btn-danger" onclick="limpiarBaseDatos()" style="width: auto; padding: 10px 20px; font-size: 13px; margin-left: auto;">🗑️ ELIMINAR DATOS</button>
         </div>
 
-        <!-- SECCIÓN DE IMPRESIÓN MÚLTIPLE CORREGIDA -->
+        <!-- SECCIÓN DE IMPRESIÓN MÚLTIPLE -->
         <div class="admin-card full-width" style="margin-bottom: 25px;">
             <h3 style="color: var(--accent-gold); display: flex; align-items: center; gap: 8px;">🖨️ Centro de Impresión Múltiple</h3>
             
@@ -86,12 +128,12 @@
                 <label>Método de Selección:</label>
                 <select id="metodo_impresion" onchange="cambiarMetodoImpresion()">
                     <option value="rango">📊 Generar por Rango de Series (Ej: LAA-001 al LAA-020)</option>
-                    <option value="manual">☑️ Selección Múltiple de Cajas Existentes (Checkboxes)</option>
+                    <option value="manual" selected>☑️ Selección Múltiple de Cajas Existentes (Checkboxes)</option>
                 </select>
             </div>
 
             <!-- Panel Rango -->
-            <div id="seccion_rango" class="input-group form-group" style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div id="seccion_rango" class="input-group form-group" style="display: none; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div>
                     <label style="font-size: 13px;">Serie Inicial:</label>
                     <input type="text" id="rango_inicio" placeholder="Ej: LAA-001">
@@ -103,7 +145,7 @@
             </div>
 
             <!-- Panel Selección Múltiple con Checkboxes -->
-            <div id="seccion_manual" class="form-group" style="display: none; background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div id="seccion_manual" class="form-group" style="background: var(--input-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <label style="font-size: 13px; margin: 0;">Seleccione las cajas a imprimir:</label>
                     <div style="display: flex; gap: 10px;">
@@ -193,6 +235,8 @@
                 document.getElementById('current_user_name').innerText = usuarioActual.nombre;
                 await cargarPanelAdmin();
                 await cargarCajasParaSeleccion();
+                // Inicializar estado visual del selector
+                cambiarMetodoImpresion();
             } else {
                 window.location.href = 'login.html';
             }
