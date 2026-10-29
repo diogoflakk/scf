@@ -31,7 +31,7 @@
         .tab-content.active { display: block; }
         .form-group { margin-bottom: 25px; }
         label { display: block; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; }
-        input[type="text"], input[type="tel"], select { width: 100%; padding: 16px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; font-weight: 500; }
+        input[type="text"], input[type="tel"], input[type="date"], select { width: 100%; padding: 16px; background: var(--input-bg); color: var(--input-text); border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-size: 16px; font-weight: 500; }
         input:focus, select:focus { border-color: var(--accent-main); outline: none; }
         button { width: 100%; background: var(--accent-main); color: #FFF; border: none; padding: 16px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s;}
         button:hover { filter: brightness(1.1); }
@@ -67,7 +67,7 @@
         <div class="header">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
-                <h1>Sistema GCF - Panel Operativo V5.3</h1>
+                <h1>Sistema GCF - Panel Operativo V5.6</h1>
             </div>
             <div class="user-badge">
                 👤 <span id="current_user_name">Operador</span>
@@ -157,8 +157,24 @@
         <div id="tab-inventario" class="tab-content">
             <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
                 <h2 style="margin: 0; color: var(--text-main); font-size: 18px;">SEGUIMIENTO DEL INVENTARIO</h2>
-                <div><input type="text" id="buscador_inventario" placeholder="🔍 Buscar por ubicación o código..." onkeyup="filtrarInventario()" style="padding: 12px 15px; font-size: 15px;"></div>
+                
+                <!-- NUEVOS FILTROS AVANZADOS -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <label style="font-size: 12px; margin-bottom: 5px;">🔍 Código o Ubicación</label>
+                        <input type="text" id="buscador_general" placeholder="Ej: LAA-001, Almacén..." onkeyup="filtrarInventario()" style="padding: 12px 15px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; margin-bottom: 5px;">👤 Filtrar por Receptor</label>
+                        <input type="text" id="buscador_receptor" placeholder="Ej: Acosta, Juan..." onkeyup="filtrarInventario()" style="padding: 12px 15px; font-size: 14px;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; margin-bottom: 5px;">📅 Filtrar por Fecha</label>
+                        <input type="date" id="buscador_fecha" onchange="filtrarInventario()" style="padding: 11px 15px; font-size: 14px;">
+                    </div>
+                </div>
             </div>
+
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -169,7 +185,7 @@
                             <th>Ubicación</th>
                             <th>Estado</th>
                             <th>Operador</th>
-                            <th>Receptor</th>
+                            <th>Receptor / Fecha</th>
                         </tr>
                     </thead>
                     <tbody id="tabla_inventario"></tbody>
@@ -377,7 +393,6 @@
             if(!caja) return alert("⚠️ La caja no existe.");
             if(caja.estado === 'DESPACHADO') return alert("⚠️ Ya figura como despachada.");
 
-            // Si la casilla está activa y se ingresó el DNI, se adjunta. De lo contrario, solo va el nombre limpio.
             const receptorFinal = activarDni && dniReceptor ? `${nombre} (DNI: ${dniReceptor})` : nombre;
 
             await supabaseClient.from('cajas').update({ 
@@ -421,23 +436,54 @@
         }
 
         function filtrarInventario() {
-            const texto = document.getElementById('buscador_inventario').value.toLowerCase();
+            const textoGeneral = document.getElementById('buscador_general').value.toLowerCase().trim();
+            const textoReceptor = document.getElementById('buscador_receptor').value.toLowerCase().trim();
+            const fechaFiltro = document.getElementById('buscador_fecha').value; // Formato YYYY-MM-DD
+
             const filtrados = cacheInventario.filter(c => {
-                return (c.serial || '').toLowerCase().includes(texto) || 
-                       (c.ubi || '').toLowerCase().includes(texto) || 
-                       (c.descrip || '').toLowerCase().includes(texto) || 
-                       (c.receptor || '').toLowerCase().includes(texto);
+                // Filtro 1: Código o Ubicación
+                const coincideGeneral = !textoGeneral || 
+                    (c.serial || '').toLowerCase().includes(textoGeneral) || 
+                    (c.ubi || '').toLowerCase().includes(textoGeneral) || 
+                    (c.descrip || '').toLowerCase().includes(textoGeneral);
+
+                // Filtro 2: Receptor (ej: "Acosta")
+                const coincideReceptor = !textoReceptor || 
+                    (c.receptor || '').toLowerCase().includes(textoReceptor);
+
+                // Filtro 3: Fecha (si Supabase almacena updated_at o created_at)
+                let coincideFecha = true;
+                if (fechaFiltro) {
+                    const fechaCaja = c.updated_at ? c.updated_at.split('T')[0] : (c.created_at ? c.created_at.split('T')[0] : '');
+                    coincideFecha = fechaCaja === fechaFiltro;
+                }
+
+                return coincideGeneral && coincideReceptor && coincideFecha;
             });
+
             renderizarTablaInventario(filtrados);
         }
 
         function renderizarTablaInventario(lista) {
             const tbody = document.getElementById('tabla_inventario');
             tbody.innerHTML = '';
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No se encontraron registros con esos criterios.</td></tr>`;
+                return;
+            }
+
             lista.forEach(c => {
                 const tr = document.createElement('tr');
                 const esDespachado = c.estado === 'DESPACHADO';
                 const claseEstado = esDespachado ? 'estado-despachado' : 'estado-almacen';
+
+                let fechaTexto = '';
+                if (c.updated_at) {
+                    const d = new Date(c.updated_at);
+                    fechaTexto = `<br><small style="color: var(--text-muted);">🕒 ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>`;
+                }
+
                 tr.innerHTML = `
                     <td style="color:var(--accent-main); font-weight:bold;">${c.serial}</td>
                     <td>${c.descrip || '-'}</td>
@@ -445,7 +491,7 @@
                     <td>${c.ubi}</td>
                     <td class="${claseEstado}">${c.estado || 'EN ALMACEN'}</td>
                     <td>${c.operador}</td>
-                    <td>${c.receptor || '-'}</td>
+                    <td>${c.receptor || '-'}${fechaTexto}</td>
                 `;
                 tbody.appendChild(tr);
             });
