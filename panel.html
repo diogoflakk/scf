@@ -67,7 +67,7 @@
         <div class="header">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <img src="logo.png" alt="Logo GCF" style="height: 38px; width: auto; object-fit: contain;">
-                <h1>Sistema GCF - Panel Operativo V5.7</h1>
+                <h1>Sistema GCF - Panel Operativo V5.9</h1>
             </div>
             <div class="user-badge">
                 👤 <span id="current_user_name">Operador</span>
@@ -158,7 +158,7 @@
             <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
                 <h2 style="margin: 0; color: var(--text-main); font-size: 18px;">SEGUIMIENTO DEL INVENTARIO</h2>
                 
-                <!-- FILTROS AVANZADOS -->
+
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <div>
                         <label style="font-size: 12px; margin-bottom: 5px;">🔍 Código o Ubicación</label>
@@ -389,20 +389,32 @@
             if(!serial || !nombre) return alert("⚠️ Complete la Serie y el Nombre del receptor.");
             if(activarDni && dniReceptor.length !== 8) return alert("⚠️ El DNI del receptor debe tener 8 dígitos.");
             
-            const { data: caja } = await supabaseClient.from('cajas').select('*').eq('serial', serial).single();
-            if(!caja) return alert("⚠️ La caja no existe.");
-            if(caja.estado === 'DESPACHADO') return alert("⚠️ Ya figura como despachada.");
+
+            const { data: caja, error: errConsulta } = await supabaseClient.from('cajas').select('*').eq('serial', serial).single();
+            if(errConsulta || !caja) return alert("⚠️ La caja no existe.");
+            
+
+            const estadoActual = (caja.estado || '').toUpperCase().trim();
+            if(estadoActual === 'DESPACHADO') {
+                return alert("⚠️ Esta caja ya figura como DESPACHADA anteriormente.");
+            }
 
             const receptorFinal = activarDni && dniReceptor ? `${nombre} (DNI: ${dniReceptor})` : nombre;
             const fechaActual = new Date().toISOString();
 
-            await supabaseClient.from('cajas').update({ 
+            // Ejecutamos la actualización explícita en Supabase
+            const { error: errUpdate } = await supabaseClient.from('cajas').update({ 
                 estado: 'DESPACHADO', 
                 ubi: '-', 
                 receptor: receptorFinal, 
                 operador: usuarioActual.nombre,
                 updated_at: fechaActual 
             }).eq('serial', serial);
+
+            if (errUpdate) {
+                alert("⚠️ Error al actualizar en Supabase: " + errUpdate.message);
+                return;
+            }
 
             enviarTelegram(`🚨 ALERTA: Caja ${serial} despachada.\n\n👤 Receptor: ${receptorFinal}\n👨‍💻 Operador: ${usuarioActual.nombre}`);
 
@@ -413,6 +425,9 @@
             document.getElementById('chk_activar_dni').checked = false;
             document.getElementById('contenedor_dni_receptor').style.display = 'none';
             document.getElementById('eg_serial').focus();
+            
+
+            cargarInventario();
         }
 
         async function procesarTraslado() {
@@ -422,7 +437,7 @@
 
             const { data: caja } = await supabaseClient.from('cajas').select('*').eq('serial', serial).single();
             if(!caja) return alert("⚠️ La caja no existe.");
-            if(caja.estado === 'DESPACHADO') return alert("⚠️ No se puede trasladar una caja despachada.");
+            if((caja.estado || '').toUpperCase().trim() === 'DESPACHADO') return alert("⚠️ No se puede trasladar una caja despachada.");
 
             await supabaseClient.from('cajas').update({ ubi: nuevaUbi }).eq('serial', serial);
             alert("✅ Caja reubicada.");
@@ -432,24 +447,21 @@
         }
 
         async function cargarInventario() {
-            // Traemos todo el inventario para poder buscar entre lo despachado si se filtra por fecha o receptor
             const { data: cajas } = await supabaseClient.from('cajas').select('*').order('serial', { ascending: false });
             cacheInventario = cajas || [];
-            filtrarInventario(); // Se renderiza aplicando el filtro por defecto (ocultando despachados a menos que se busque)
+            filtrarInventario(); 
         }
 
         function filtrarInventario() {
             const textoGeneral = document.getElementById('buscador_general').value.toLowerCase().trim();
             const textoReceptor = document.getElementById('buscador_receptor').value.toLowerCase().trim();
-            const fechaFiltro = document.getElementById('buscador_fecha').value; // Formato YYYY-MM-DD
+            const fechaFiltro = document.getElementById('buscador_fecha').value; 
 
-            // Verificamos si el usuario está realizando una búsqueda activa por receptor o por fecha
             const buscandoActivamente = textoReceptor !== "" || fechaFiltro !== "";
 
             const filtrados = cacheInventario.filter(c => {
-                const esDespachado = c.estado === 'DESPACHADO';
+                const esDespachado = (c.estado || '').toUpperCase().trim() === 'DESPACHADO';
 
-                // Si NO está buscando activamente por receptor o fecha, ocultamos los despachados por defecto
                 if (!buscandoActivamente && esDespachado) {
                     return false;
                 }
@@ -485,7 +497,7 @@
 
             lista.forEach(c => {
                 const tr = document.createElement('tr');
-                const esDespachado = c.estado === 'DESPACHADO';
+                const esDespachado = (c.estado || '').toUpperCase().trim() === 'DESPACHADO';
                 const claseEstado = esDespachado ? 'estado-despachado' : 'estado-almacen';
 
                 let fechaTexto = '';
